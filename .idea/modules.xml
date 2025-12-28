@@ -2,7 +2,7 @@
 <project version="4">
   <component name="ProjectModuleManager">
     <modules>
-      <module fileurl="file://$PROJECT_DIR$/.idea/kairu-native-clone.iml" filepath="$PROJECT_DIR$/.idea/kairu-native-clone.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/project_kairu-native-clone.iml" filepath="$PROJECT_DIR$/.idea/project_kairu-native-clone.iml" />
     </modules>
   </component>
 </project>
