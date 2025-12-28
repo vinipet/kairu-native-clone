@@ -1,0 +1,44 @@
+package com.agents.demo.entity;
+
+import com.agents.demo.enums.ProjectStatus;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.hibernate.annotations.CreationTimestamp;
+
+import java.time.LocalDateTime;
+import java.util.List;
+
+@Entity
+@Getter
+@Setter
+public class Project {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private int id;
+
+    @Column(nullable = false)
+    private String name;
+
+    private String description;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ProjectStatus status;
+
+    @CreationTimestamp
+    @Column(updatable = false)
+    private LocalDateTime createdAt;
+
+    private LocalDateTime deadline;
+
+    @OneToMany(mappedBy = "project")
+    private List<Task> tasks;
+
+    public Project() {
+        this.status = ProjectStatus.PLANNING;
+    }
+
+    // getters e setters
+}
