@@ -4,7 +4,17 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="097afb8b-d175-4a5b-9f5d-7daa8308cf31" name="Changes" comment="criação das entitys" />
+    <list default="true" id="097afb8b-d175-4a5b-9f5d-7daa8308cf31" name="Changes" comment="dependencias adicionadas">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/dto/member/MemberRequestDTO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/dto/member/MemberResponseDTO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/dto/project/ProjectRequestDTO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/dto/project/ProjectResponseDTO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/dto/task/TaskRequestDTO.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/dto/task/TaskResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/agents/demo/entity/Project.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/entity/Project.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/agents/demo/entity/Task.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/entity/Task.java" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -13,8 +23,8 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Class" />
         <option value="Enum" />
+        <option value="Class" />
       </list>
     </option>
   </component>
@@ -39,6 +49,13 @@
     &quot;accountId&quot;: &quot;7238aa85-9b12-40b9-af9a-65b3be9366d8&quot;
   }
 }</component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -51,7 +68,6 @@
     <ConfirmationsSetting value="2" id="Add" />
   </component>
   <component name="ProjectViewState">
-    <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
   <component name="PropertiesComponent">{
@@ -60,9 +76,13 @@
     &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;java-project-settings-with-spring-boot-environment&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;javaProject&quot;,
     &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Guilherme/Downloads/kairu-native-clone&quot;
+    &quot;last_opened_file_path&quot;: &quot;C:/Users/Guilherme/Downloads/kairu-native-clone&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Global Libraries&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.2&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;Errors&quot;
   }
 }</component>
   <component name="SharedIndexes">
@@ -96,12 +116,32 @@
       <option name="project" value="LOCAL" />
       <updated>1766955763118</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="dependencias adicionadas">
+      <option name="closed" value="true" />
+      <created>1766960151892</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1766960151892</updated>
+    </task>
+    <option name="localTasksCounter" value="4" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="creating project in java with spring boot" />
     <MESSAGE value="criação das entitys" />
-    <option name="LAST_COMMIT_MESSAGE" value="criação das entitys" />
+    <MESSAGE value="dependencias adicionadas" />
+    <option name="LAST_COMMIT_MESSAGE" value="dependencias adicionadas" />
   </component>
 </project>

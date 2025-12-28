@@ -40,5 +40,4 @@ public class Project {
         this.status = ProjectStatus.PLANNING;
     }
 
-    // getters e setters
 }
