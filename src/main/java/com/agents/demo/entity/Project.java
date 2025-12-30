@@ -1,8 +1,11 @@
 package com.agents.demo.entity;
 
+import com.agents.demo.dto.project.ProjectRequestDTO;
 import com.agents.demo.enums.ProjectStatus;
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import org.hibernate.annotations.CreationTimestamp;
 
@@ -12,6 +15,8 @@ import java.util.List;
 @Entity
 @Getter
 @Setter
+@AllArgsConstructor
+@NoArgsConstructor
 public class Project {
 
     @Id
@@ -36,9 +41,16 @@ public class Project {
     @OneToMany(mappedBy = "project")
     private List<Task> tasks;
 
-    public Project() {
-        this.status = ProjectStatus.PLANNING;
+    public Project(ProjectRequestDTO projectRequestDTO) {
     }
 
-    // getters e setters
+    // ✔ Regra de negócio válida
+    public void archive() {
+        this.status = ProjectStatus.ARCHIVED;
+    }
+
 }
+
+
+
+

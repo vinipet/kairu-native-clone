@@ -4,7 +4,19 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="097afb8b-d175-4a5b-9f5d-7daa8308cf31" name="Changes" comment="criação das entitys" />
+    <list default="true" id="097afb8b-d175-4a5b-9f5d-7daa8308cf31" name="Changes" comment="@Getter and @Setter">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/controller/ProjectController.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/repository/ProjectRepositiry.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/services/ProjectService.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/resources/application-prod.yml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/agents/demo/dto/project/ProjectRequestDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/dto/project/ProjectRequestDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/agents/demo/dto/project/ProjectResponseDTO.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/dto/project/ProjectResponseDTO.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/agents/demo/entity/Project.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/entity/Project.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/agents/demo/enums/ProjectStatus.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/agents/demo/enums/ProjectStatus.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/resources/application.properties" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/resources/application.properties" afterDir="false" />
+    </list>
     <option name="SHOW_DIALOG" value="false" />
     <option name="HIGHLIGHT_CONFLICTS" value="true" />
     <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
@@ -13,8 +25,9 @@
   <component name="FileTemplateManagerImpl">
     <option name="RECENT_TEMPLATES">
       <list>
-        <option value="Class" />
         <option value="Enum" />
+        <option value="Interface" />
+        <option value="Class" />
       </list>
     </option>
   </component>
@@ -39,6 +52,13 @@
     &quot;accountId&quot;: &quot;7238aa85-9b12-40b9-af9a-65b3be9366d8&quot;
   }
 }</component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="mavenHomeTypeForPersistence" value="WRAPPER" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
   <component name="McpProjectServerCommands">
     <commands />
     <urls />
@@ -51,20 +71,46 @@
     <ConfirmationsSetting value="2" id="Add" />
   </component>
   <component name="ProjectViewState">
-    <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent">{
-  &quot;keyToString&quot;: {
-    &quot;ModuleVcsDetector.initialDetectionPerformed&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.MCP Project settings loaded&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
-    &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;java-project-settings-with-spring-boot-environment&quot;,
-    &quot;kotlin-language-version-configured&quot;: &quot;true&quot;,
-    &quot;last_opened_file_path&quot;: &quot;C:/Users/Guilherme/Downloads/kairu-native-clone&quot;
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "Application.KairuNativeCloneApplication.executor": "Run",
+    "ModuleVcsDetector.initialDetectionPerformed": "true",
+    "Notification.DisplayName-DoNotAsk-Lombok plugin": "Lombok integration problem",
+    "Notification.DoNotAsk-Lombok plugin": "true",
+    "RunOnceActivity.MCP Project settings loaded": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.git.unshallow": "true",
+    "Spring Boot.KairuNativeCloneApplication.executor": "Run",
+    "git-widget-placeholder": "javaProject",
+    "kotlin-language-version-configured": "true",
+    "last_opened_file_path": "C:/Users/Guilherme/Downloads/kairu-native-clone",
+    "project.structure.last.edited": "Global Libraries",
+    "project.structure.proportion": "0.0",
+    "project.structure.side.proportion": "0.2",
+    "settings.editor.selected.configurable": "Errors"
   }
-}</component>
+}]]></component>
+  <component name="RunManager">
+    <configuration name="KairuNativeCloneApplication" type="Application" factoryName="Application">
+      <option name="MAIN_CLASS_NAME" value="com.agents.demo.KairuNativeCloneApplication" />
+      <module name="demo" />
+      <extension name="net.ashald.envfile">
+        <option name="IS_ENABLED" value="false" />
+        <option name="IS_SUBST" value="false" />
+        <option name="IS_PATH_MACRO_SUPPORTED" value="false" />
+        <option name="IS_IGNORE_MISSING_FILES" value="false" />
+        <option name="IS_ENABLE_EXPERIMENTAL_INTEGRATIONS" value="false" />
+        <ENTRIES>
+          <ENTRY IS_ENABLED="true" PARSER="runconfig" IS_EXECUTABLE="false" />
+        </ENTRIES>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+  </component>
   <component name="SharedIndexes">
     <attachedChunks>
       <set>
@@ -96,12 +142,59 @@
       <option name="project" value="LOCAL" />
       <updated>1766955763118</updated>
     </task>
-    <option name="localTasksCounter" value="3" />
+    <task id="LOCAL-00003" summary="dependencias adicionadas">
+      <option name="closed" value="true" />
+      <created>1766960151892</created>
+      <option name="number" value="00003" />
+      <option name="presentableId" value="LOCAL-00003" />
+      <option name="project" value="LOCAL" />
+      <updated>1766960151892</updated>
+    </task>
+    <task id="LOCAL-00004" summary="adicionando os DTOS base">
+      <option name="closed" value="true" />
+      <created>1766960702479</created>
+      <option name="number" value="00004" />
+      <option name="presentableId" value="LOCAL-00004" />
+      <option name="project" value="LOCAL" />
+      <updated>1766960702479</updated>
+    </task>
+    <task id="LOCAL-00005" summary="adicionando os entitys">
+      <option name="closed" value="true" />
+      <created>1766960723988</created>
+      <option name="number" value="00005" />
+      <option name="presentableId" value="LOCAL-00005" />
+      <option name="project" value="LOCAL" />
+      <updated>1766960723988</updated>
+    </task>
+    <task id="LOCAL-00006" summary="@Getter and @Setter">
+      <option name="closed" value="true" />
+      <created>1766960879100</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1766960879100</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
   </component>
   <component name="VcsManagerConfiguration">
     <MESSAGE value="creating project in java with spring boot" />
     <MESSAGE value="criação das entitys" />
-    <option name="LAST_COMMIT_MESSAGE" value="criação das entitys" />
+    <MESSAGE value="dependencias adicionadas" />
+    <MESSAGE value="adicionando os DTOS base" />
+    <MESSAGE value="adicionando os entitys" />
+    <MESSAGE value="@Getter and @Setter" />
+    <option name="LAST_COMMIT_MESSAGE" value="@Getter and @Setter" />
   </component>
 </project>

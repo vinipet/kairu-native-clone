@@ -1,0 +1,33 @@
+spring:
+  profiles:
+    active: prod
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/kairu
+    username: root
+    password: root
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  jpa:
+    database-platform: org.hibernate.dialect.MySQLDialect
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+    open-in-view: false
+
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+    baseline-on-migrate: true
+
+server:
+  port: 8080
+
+logging:
+  level:
+    org.hibernate.SQL: warn
+    org.springframework.web: info
+
+  spring:
+    profiles:
+      active: prodv

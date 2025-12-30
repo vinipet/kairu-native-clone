@@ -43,15 +43,4 @@ public class Task {
     @CreationTimestamp
     @Column(updatable = false)
     private LocalDateTime createdAt;
-
-
-    public Member getAssignedTo() {
-        return assignedTo;
-    }
-
-    public void setAssignedTo(Member assignedTo) {
-        this.assignedTo = assignedTo;
-    }
-
-
 }
