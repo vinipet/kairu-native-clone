@@ -1,4 +1,4 @@
-package com.kairu;
+package com.kairu.core.event;
 
 public abstract class BaseEvent implements Event {
     protected String message;
