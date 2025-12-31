@@ -1,20 +1,16 @@
 package com.kairu.core.event;
+import java.time.Instant;
 
 public abstract class BaseEvent implements Event {
-    protected String message;
-    protected long clock;
+    private final Instant timestamp;
 
-    public BaseEvent(String message, long clock) {
-        this.message = message;
-        this.clock = clock; 
+    public BaseEvent(Instant timestamp) {
+        this.timestamp = timestamp; 
     }
-
-    public String getMessage() {
-      return this.message;
-    }
-
-    public long getClock() {
-      return this.clock;
+    
+    @Override
+    public Instant getOccurredAt() {
+      return timestamp;
     }
 
 }

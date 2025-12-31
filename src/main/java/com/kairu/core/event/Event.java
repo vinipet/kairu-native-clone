@@ -1,6 +1,6 @@
 package com.kairu.core.event;
+import java.time.Instant;
 
 public interface Event {
-    String getMessage();    
-    long getClock();    
+    Instant getOccurredAt();    
 }
