@@ -9,7 +9,7 @@ public class SimpleEventBus implements EventBus {
     @Override
     @SuppressWarnings("unchecked")
     public <T extends Event> void publish(T event) {
-        Class<?> eventType = event.getClass();
+        Class<? extends Event> eventType = event.getClass();
 
         List <EventListener<? extends Event>> eventListeners =
                 listeners.getOrDefault(eventType, List.of());
