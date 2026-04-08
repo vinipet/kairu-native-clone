@@ -1,5 +1,6 @@
 package com.kairu.core.time;
 
+import com.kairu.core.bus.EventBus;
 import com.kairu.core.time.Clock;
 import java.time.Instant;
 import java.time.Duration;
@@ -7,17 +8,19 @@ import java.time.Duration;
 public final class sessionTimer implements Timer{
   private Instant startedAt;
   private long elapsedTime = 0;
+  private State state = State.IDLE;
+  private Clock clock;
+  private EventBus bus;
   private enum State {
     IDLE,
     RUNNING,
     PAUSED,
     STOPPED
   }
-  private State state = State.IDLE;
-  private Clock clock;
   
-  public sessionTimer(Clock clock){
+  public sessionTimer(Clock clock, EventBus bus){
     this.clock = clock;
+    this.bus = bus;
   }
 
   public void start(){
