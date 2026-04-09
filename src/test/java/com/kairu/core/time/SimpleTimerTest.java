@@ -1,12 +1,10 @@
 package com.kairu.core.time;
 
 import java.time.Instant;
-
 import org.junit.jupiter.api.Test;
-
 import com.kairu.core.bus.SimpleEventBus;
-
 import static org.junit.jupiter.api.Assertions.*;
+import com.kairu.core.session.sessionTimer;
 
 public class SimpleTimerTest {
 
