@@ -1,30 +1,29 @@
 package com.kairu.core.bus;
 
 import com.kairu.core.event.BaseEvent;
-import org.junit.jupiter.api.Test;
 
+import org.junit.jupiter.api.Test;
 import java.time.Instant;
 import java.util.concurrent.atomic.AtomicBoolean;
-
 import static org.junit.jupiter.api.Assertions.*;
 
 class SimpleEventBusTest {
   
-    public class ExeptionTest extends RuntimeException {
+  public class ExeptionTest extends RuntimeException {
         public ExeptionTest(String message) {
           super(message);
         }
-    }
+  }
 
-    static class TestEvent extends BaseEvent {
+  static class TestEvent extends BaseEvent {
 
-        public TestEvent(Instant occurredAt) {
+      public TestEvent(Instant occurredAt) {
             super(occurredAt);
-        }
-    }
+      }
+  }
 
-    @Test
-    void listenerReceivesPublishedEvent() {
+  @Test
+  void listenerReceivesPublishedEvent() {
         SimpleEventBus bus = new SimpleEventBus();
         AtomicBoolean received = new AtomicBoolean(false);
         bus.subscribeListener(TestEvent.class, event -> {
@@ -32,23 +31,23 @@ class SimpleEventBusTest {
         });
         bus.publishEvent(new TestEvent(Instant.now()));
         assertTrue(received.get());
-    }
+  }
 
-    @Test
-    void publishingEventWithNoListenersDoesNotCrash() {
+  @Test
+  void publishingEventWithNoListenersDoesNotCrash() {
       SimpleEventBus bus = new SimpleEventBus();
       TestEvent event = new TestEvent(Instant.now());
       assertDoesNotThrow(() -> bus.publishEvent(event));
-    }
-    static class AnotherEvent extends BaseEvent {
-
-      public AnotherEvent(Instant occurredAt) {
+  }
+  
+  static class AnotherEvent extends BaseEvent {
+  public AnotherEvent(Instant occurredAt) {
         super(occurredAt);
       }
     }
 
-    @Test
-    void listenerOnlyReceivesSubscribedEventType() {
+  @Test
+  void listenerOnlyReceivesSubscribedEventType() {
       SimpleEventBus bus = new SimpleEventBus();
       AtomicBoolean received = new AtomicBoolean(false);
       bus.subscribeListener(TestEvent.class, event -> {
@@ -56,10 +55,10 @@ class SimpleEventBusTest {
       });
       bus.publishEvent(new AnotherEvent(Instant.now()));
       assertFalse(received.get());
-    }
+  }
 
-    @Test 
-    void twoListenerReceiveSameEvent() {
+  @Test 
+  void twoListenerReceiveSameEvent() {
         SimpleEventBus bus = new SimpleEventBus();
 
         AtomicBoolean firstListenerExecuted = new AtomicBoolean(false);
@@ -77,10 +76,10 @@ class SimpleEventBusTest {
 
         assertTrue(firstListenerExecuted.get());
         assertTrue(secondListenerExecuted.get());
-    }
+  }
     
-    @Test
-    void shouldContinueProcessingWhenListenerThrowsException() {
+  @Test
+  void shouldContinueProcessingWhenListenerThrowsException() {
       SimpleEventBus bus = new SimpleEventBus();
       AtomicBoolean firstreceived = new AtomicBoolean(false);
       AtomicBoolean secondreceived = new AtomicBoolean(false);
