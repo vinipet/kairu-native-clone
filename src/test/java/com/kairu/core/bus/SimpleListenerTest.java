@@ -5,10 +5,9 @@ import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.time.Instant;
 import org.junit.jupiter.api.Test;
-import com.kairu.core.bus.SimpleListener;
 import com.kairu.core.event.TimerStartedEvent;
 import com.kairu.core.time.ManualClock;
-import com.kairu.core.session.sessionTimer;
+import com.kairu.core.time.sessionTimer;
 
 public class SimpleListenerTest {
   @Test

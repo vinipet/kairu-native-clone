@@ -1,7 +1,11 @@
 package com.kairu.core.time;
 
 import com.kairu.core.bus.EventBus;
-import com.kairu.core.time.Clock;
+import com.kairu.core.event.TimerPausedEvent;
+import com.kairu.core.event.TimerResumeEvent;
+import com.kairu.core.event.TimerStartedEvent;
+import com.kairu.core.event.TimerStoppedEvent;
+
 import java.time.Instant;
 import java.time.Duration;
 
@@ -28,6 +32,8 @@ public final class sessionTimer implements Timer{
       startedAt = clock.now();
       elapsedTime = 0;
       state = State.RUNNING;
+      bus.publishEvent(new TimerStartedEvent(startedAt));
+
     }else{
       throw new IllegalStateException("nao pode começar uma sessão antes de terminar outra");
 
@@ -41,6 +47,7 @@ public final class sessionTimer implements Timer{
 
     elapsedTime += Duration.between(startedAt, clock.now()).toSeconds();
     state = State.PAUSED;
+    bus.publishEvent(new TimerPausedEvent(clock.now()));
   }
 
   public long getElapsedTime(){
@@ -54,7 +61,8 @@ public final class sessionTimer implements Timer{
     switch (state) {
       case PAUSED:
         state = State.STOPPED;
-          break;
+        bus.publishEvent(new TimerStoppedEvent(clock.now()));
+      break;
 
       case STOPPED:
         throw new IllegalStateException("nao pode finalizar sessão ja finalizada");
@@ -65,7 +73,8 @@ public final class sessionTimer implements Timer{
       case RUNNING:
         elapsedTime += Duration.between(startedAt, clock.now()).toSeconds();
         state = State.STOPPED;
-        break;
+        bus.publishEvent(new TimerStoppedEvent(clock.now()));
+      break;
     }
   }  
 
@@ -76,5 +85,6 @@ public final class sessionTimer implements Timer{
 
     startedAt = clock.now();
     state = State.RUNNING;
+      bus.publishEvent(new TimerResumeEvent(clock.now()));
   }
 }
