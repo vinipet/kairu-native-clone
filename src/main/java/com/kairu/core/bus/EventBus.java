@@ -7,6 +7,6 @@ public interface EventBus {
 
     <T extends Event> void subscribeListener(
         Class<T> eventType,
-        EventListener<T> listener
+        EventListener<? super T> listener
     );
 }

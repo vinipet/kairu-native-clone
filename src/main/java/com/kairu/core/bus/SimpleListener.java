@@ -5,7 +5,7 @@ import java.util.List;
 import com.kairu.core.event.Event;
 
 public class SimpleListener<E extends Event> implements EventListener<E>{
-  List<E> EventList = new ArrayList<E>(); 
+  protected List<E> EventList = new ArrayList<E>(); 
 
   public void onEvent(E event){
     EventList.add(event);
