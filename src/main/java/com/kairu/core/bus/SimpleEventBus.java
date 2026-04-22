@@ -18,8 +18,7 @@ public class SimpleEventBus implements EventBus {
             try {
               ((EventListener<T>) listener).onEvent(event);
             } catch (Exception e) {
-            // dispara evento de erro
-            System.out.println("add evento de listener quebrado");
+            System.err.println("listener falhou aqui");
             }
         }
     }
@@ -27,7 +26,7 @@ public class SimpleEventBus implements EventBus {
     @Override
     public <T extends Event> void subscribeListener(
             Class<T> eventType,
-            EventListener<T> listener
+            EventListener<? super T> listener
     ) {
         listeners
             .computeIfAbsent(eventType, k -> new ArrayList<>())
