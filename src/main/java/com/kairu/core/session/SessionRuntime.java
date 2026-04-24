@@ -18,7 +18,6 @@ public class SessionRuntime implements EventListener<Event>{
   private final Map<Class<? extends Event>, Consumer<Event>> handlers = new HashMap<>();
   private long sessionId;
   private Instant currentStart;
-  private Instant endAt;
   private List<Interval> intervals = new ArrayList<>();
   private State state = State.IDLE;
   EventBus bus;
@@ -75,11 +74,10 @@ public class SessionRuntime implements EventListener<Event>{
       intervals.add(currentInterval);
     }
 
-    endAt = e.getOccurredAt();
     currentStart = null;
     state = State.STOPPED;
-    finishSession();
-    bus.publishEvent(new SessionCompletedEvent(clock.now(), sessionId));
+    Session session = finishSession();
+    bus.publishEvent(new SessionCompletedEvent(clock.now(),session));
 
   }
 
@@ -104,13 +102,11 @@ public class SessionRuntime implements EventListener<Event>{
   }
 
   public Session finishSession(){
-    Instant startedAt = intervals.getFirst().start;
-    Instant endedAt = intervals.getLast().end;
     Duration duration = intervals.stream().map(Interval::getDuration).reduce(Duration.ZERO, Duration::plus);   
     if(duration.toMinutes() <= 5){
       throw new IllegalStateException("the duration of session must be gratter than 5 minutes");
     } 
-    Session session = new Session(sessionId, startedAt, endedAt, intervals);
+    Session session = new Session(sessionId, intervals);
     return session;
   }
 }

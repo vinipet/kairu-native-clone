@@ -1,14 +1,16 @@
 package com.kairu.core.event;
 import java.time.Instant;
 
+import com.kairu.core.session.Session;
+
 public class SessionCompletedEvent extends BaseEvent {
-    private final long sessionId;
-    public SessionCompletedEvent(Instant timestamp, long sessionId) {
+    private final Session session;
+    public SessionCompletedEvent(Instant timestamp, Session session) {
         super(timestamp);
-        this.sessionId = sessionId;
+        this.session = session;
     }
     
-    public long getSessionId(){
-    return sessionId;
+    public Session getSession(){
+    return session;
   }
 }

@@ -6,7 +6,7 @@ import java.util.List;
 import com.kairu.core.time.Interval;
 
 public class Session {
-  private final long sessionId;
+  public final long sessionId;
   private final Instant startedAt;
   private final Instant endedAt;
   private final List<Interval> intervals;
@@ -31,8 +31,6 @@ public class Session {
   }
 
   public Session(long sessionId,
-               Instant startedAt,
-               Instant endedAt,
                List<Interval> intervals) {
 
       if (intervals == null || intervals.isEmpty()) {
@@ -48,8 +46,9 @@ public class Session {
       }
 
       this.sessionId = sessionId;
-      this.startedAt = startedAt;
-      this.endedAt = endedAt;
+      this.startedAt = intervals.getFirst().start;
+      this.endedAt = intervals.getLast().end;
+
   }
 
   
