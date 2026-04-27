@@ -15,11 +15,7 @@ public class SimpleEventBus implements EventBus {
                 listeners.getOrDefault(eventType, List.of());
 
         for (EventListener <? extends Event> listener : eventListeners) {
-            try {
               ((EventListener<T>) listener).onEvent(event);
-            } catch (Exception e) {
-            System.err.println("listener falhou aqui");
-            }
         }
     }
 
