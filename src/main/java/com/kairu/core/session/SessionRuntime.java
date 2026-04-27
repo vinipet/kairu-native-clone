@@ -20,8 +20,8 @@ public class SessionRuntime implements EventListener<Event>{
   private Instant currentStart;
   private List<Interval> intervals = new ArrayList<>();
   private State state = State.IDLE;
-  EventBus bus;
-  Clock clock;
+  private EventBus bus;
+  private Clock clock;
   private enum State{
     IDLE,
     RUNNING,
