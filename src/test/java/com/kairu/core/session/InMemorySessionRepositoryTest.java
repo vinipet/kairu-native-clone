@@ -10,6 +10,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 public class  InMemorySessionRepositoryTest{
   
@@ -22,7 +23,8 @@ public class  InMemorySessionRepositoryTest{
     Instant inst2 = clock.now();
     Interval interval = new Interval(inst1, inst2);
     intervals.add(interval);
-    Session session = new Session(1, intervals);
+    UUID id = UUID.randomUUID();
+    Session session = new Session(id , intervals);
     InMemorySessionRepository sessionRepository = new InMemorySessionRepository();
 
     sessionRepository.save(session);
@@ -39,9 +41,11 @@ public class  InMemorySessionRepositoryTest{
     Instant inst2 = clock.now();
     Interval interval = new Interval(inst1, inst2);
     intervals.add(interval);
+    UUID id1 = UUID.randomUUID();
+    UUID id2 = UUID.randomUUID();
 
-    Session session = new Session(1, intervals);
-    Session session2 = new Session(1, intervals);
+    Session session = new Session(id1, intervals);
+    Session session2 = new Session(id2, intervals);
     InMemorySessionRepository sessionRepository = new InMemorySessionRepository();
 
     sessionRepository.save(session);
@@ -60,11 +64,12 @@ public class  InMemorySessionRepositoryTest{
     Interval interval = new Interval(inst1, inst2);
     intervals.add(interval);
     InMemorySessionRepository sessionRepository = new InMemorySessionRepository();
+    UUID id1 = UUID.randomUUID();
 
-    Session session = new Session(1,intervals);
+    Session session = new Session(id1,intervals);
     sessionRepository.save(session);
 
-    assertEquals(session, sessionRepository.findById(1).get());
+    assertEquals(session, sessionRepository.findById(id1).get());
   }
 
 

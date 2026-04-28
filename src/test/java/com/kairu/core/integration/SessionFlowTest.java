@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
-
+import java.util.UUID;
 
 import com.kairu.core.bus.EventListener;
 import com.kairu.core.bus.SimpleEventBus;
@@ -30,12 +30,14 @@ public class SessionFlowTest{
     private SimpleEventBus bus;
     private ManualClock clock;
     private SessionRuntime runtime;
+    private UUID id1;  
 
   @BeforeEach
   void setup() {
     bus = new SimpleEventBus();
     clock = new ManualClock(Instant.now());
-    runtime = new SessionRuntime(1, bus, clock);
+    id1 = UUID.randomUUID();
+    runtime = new SessionRuntime(id1, bus, clock);
   } 
 
   private void startSession() {
@@ -65,8 +67,8 @@ public class SessionFlowTest{
     timer.stop();
 
     assertEquals(1, repository.findAll().size());
-    assertEquals(20, repository.findById(1).get().getTotalDuration().toMinutes());
-    assertEquals(2, repository.findById(1).get().getIntervals().size());
+    assertEquals(20, repository.findById(id1).get().getTotalDuration().toMinutes());
+    assertEquals(2, repository.findById(id1).get().getIntervals().size());
 
 
   }
@@ -78,8 +80,9 @@ public class SessionFlowTest{
       Timer timer = new sessionTimer(clock, bus);
       SessionRepository repository = new InMemorySessionRepository();
       EventListener<SessionCompletedEvent> listener = new SessionCompletedPersistenceListener(repository); 
+      UUID id1 = UUID.randomUUID();
 
-      SessionRuntime sessionRuntime = new SessionRuntime(1, bus, clock);
+      SessionRuntime sessionRuntime = new SessionRuntime(id1, bus, clock);
 
       bus.subscribeListener(SessionCompletedEvent.class, listener);
       bus.subscribeListener(TimerStartedEvent.class, sessionRuntime );
@@ -99,8 +102,9 @@ public class SessionFlowTest{
     Timer timer = new sessionTimer(clock, bus);
     SessionRepository repository = new InMemorySessionRepository();
     EventListener<SessionCompletedEvent> listener = new SessionCompletedPersistenceListener(repository); 
+    UUID id1 = UUID.randomUUID();
 
-    SessionRuntime sessionRuntime = new SessionRuntime(1, bus, clock);
+    SessionRuntime sessionRuntime = new SessionRuntime(id1, bus, clock);
 
     bus.subscribeListener(SessionCompletedEvent.class, listener);
     bus.subscribeListener(TimerStartedEvent.class, sessionRuntime );
