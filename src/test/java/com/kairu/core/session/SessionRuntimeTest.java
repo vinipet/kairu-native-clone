@@ -11,6 +11,7 @@ import com.kairu.core.time.*;
 
 import static org.junit.jupiter.api.Assertions.*;
 import java.time.Instant;
+import java.util.UUID;
 
 public class SessionRuntimeTest{
 
@@ -22,7 +23,8 @@ public class SessionRuntimeTest{
   void setup(){
     bus = new SimpleEventBus();
     clock = new ManualClock(Instant.now());
-    runtime = new SessionRuntime(1, bus, clock);
+    UUID id1 = UUID.randomUUID();
+    runtime = new SessionRuntime(id1, bus, clock);
   }
   private void startSession() {
     runtime.onEvent(new TimerStartedEvent(clock.now()));

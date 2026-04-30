@@ -3,6 +3,7 @@ package com.kairu.core.session;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 
 public class InMemorySessionRepository implements SessionRepository{
@@ -19,7 +20,7 @@ public class InMemorySessionRepository implements SessionRepository{
   }
 
   @Override
-  public Optional<Session> findById(long sessionId) {
+  public Optional<Session> findById(UUID sessionId) {
     for (Session session : sessionRepository) {
       if(session.sessionId == sessionId){
         return Optional.of(session);

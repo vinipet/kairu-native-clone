@@ -6,6 +6,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.function.Consumer;
 import com.kairu.core.event.*;
 import com.kairu.core.bus.EventBus;
@@ -16,7 +17,7 @@ import com.kairu.core.time.Interval;
 public class SessionRuntime implements EventListener<Event>{
   
   private final Map<Class<? extends Event>, Consumer<Event>> handlers = new HashMap<>();
-  private long sessionId;
+  private UUID sessionId;
   private Instant currentStart;
   private List<Interval> intervals = new ArrayList<>();
   private State state = State.IDLE;
@@ -30,7 +31,7 @@ public class SessionRuntime implements EventListener<Event>{
   };
 
 
-  public SessionRuntime(long sessionIdParam, EventBus bus, Clock clock){
+  public SessionRuntime(UUID sessionIdParam, EventBus bus, Clock clock){
     this.sessionId = sessionIdParam;
     this.bus = bus;
     this.clock = clock;

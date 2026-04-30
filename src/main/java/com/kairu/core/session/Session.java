@@ -3,10 +3,12 @@ package com.kairu.core.session;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.UUID;
+
 import com.kairu.core.time.Interval;
 
 public class Session {
-  public final long sessionId;
+  public final UUID sessionId;
   private final Instant startedAt;
   private final Instant endedAt;
   private final List<Interval> intervals;
@@ -30,7 +32,7 @@ public class Session {
       return intervals;
   }
 
-  public Session(long sessionId,
+  public Session(UUID sessionId,
                List<Interval> intervals) {
 
       if (intervals == null || intervals.isEmpty()) {
