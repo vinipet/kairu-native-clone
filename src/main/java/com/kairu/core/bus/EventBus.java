@@ -14,4 +14,8 @@ public interface EventBus {
         EventListener<? super T> listener,
         Class<T> eventType
     );
+
+    <T extends Event> void unsubscribeForAll(
+      EventListener<? extends Event> listener
+    );
 }

@@ -15,11 +15,15 @@ public final class sessionTimer implements Timer{
   private State state = State.IDLE;
   private Clock clock;
   private EventBus bus;
-  private enum State {
+  public enum State {
     IDLE,
     RUNNING,
     PAUSED,
     STOPPED
+  }
+
+  public State getState(){
+    return state;
   }
   
   public sessionTimer(Clock clock, EventBus bus){

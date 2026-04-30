@@ -29,8 +29,9 @@ public class SimpleEventBus implements EventBus {
             .computeIfAbsent(eventType, k -> new CopyOnWriteArraySet<>())
             .add(listener);
     }
-
-    public <T extends Event> void unsubscribeListener(EventListener<? super T> listener) {
+    
+    @Override
+    public <T extends Event> void unsubscribeForAll(EventListener<? extends Event> listener) {
       for (Set<EventListener<? extends Event>> eventSet : listeners.values()) {
             eventSet.remove(listener);
       }  

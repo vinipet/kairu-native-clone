@@ -137,7 +137,7 @@ class SimpleEventBusTest {
     bus.subscribeListener(TimerStartedEvent.class, multiListener);
     bus.subscribeListener(TimerStoppedEvent.class, multiListener);
 
-    bus.unsubscribeListener(multiListener);
+    bus.unsubscribeForAll(multiListener);
 
     bus.publishEvent(new TimerStartedEvent(Instant.now()));
     bus.publishEvent(new TimerStoppedEvent(Instant.now()));
