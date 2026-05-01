@@ -12,15 +12,9 @@ import java.time.Duration;
 public final class sessionTimer implements Timer{
   private Instant startedAt;
   private long elapsedTime = 0;
-  private State state = State.IDLE;
+  private State state = Timer.State.IDLE;
   private Clock clock;
   private EventBus bus;
-  public enum State {
-    IDLE,
-    RUNNING,
-    PAUSED,
-    STOPPED
-  }
 
   public State getState(){
     return state;
@@ -32,10 +26,10 @@ public final class sessionTimer implements Timer{
   }
 
   public void start(){
-    if(State.IDLE == state){
+    if(Timer.State.IDLE == state){
       startedAt = clock.now();
       elapsedTime = 0;
-      state = State.RUNNING;
+      state = Timer.State.RUNNING;
       bus.publishEvent(new TimerStartedEvent(startedAt));
 
     }else{
