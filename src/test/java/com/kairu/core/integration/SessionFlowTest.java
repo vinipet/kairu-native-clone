@@ -79,15 +79,13 @@ public class SessionFlowTest{
     Timer timer = new sessionTimer(clock, bus,id1);
     SessionRepository repository = new InMemorySessionRepository();
     EventListener<SessionCompletedEvent> listener = new SessionCompletedPersistenceListener(repository); 
-    UUID id1 = UUID.randomUUID();
 
-    SessionRuntime sessionRuntime = new SessionRuntime(id1, bus, clock);
 
     bus.subscribeListener(SessionCompletedEvent.class, listener);
-    bus.subscribeListener(TimerStartedEvent.class, sessionRuntime );
-    bus.subscribeListener(TimerStoppedEvent.class, sessionRuntime );
-    bus.subscribeListener(TimerResumeEvent.class, sessionRuntime );
-    bus.subscribeListener(TimerPausedEvent.class, sessionRuntime );
+    bus.subscribeListener(TimerStartedEvent.class, runtime );
+    bus.subscribeListener(TimerStoppedEvent.class, runtime );
+    bus.subscribeListener(TimerResumeEvent.class, runtime );
+    bus.subscribeListener(TimerPausedEvent.class, runtime );
     
     timer.start();
     clock.advanceSeconds(1000);
