@@ -29,7 +29,16 @@ public class SessionRuntime implements EventListener<Event>{
     PAUSED,
     STOPPED
   };
+  
+  public Duration getDuration(){
+    Duration passDuration = intervals.stream().map(Interval::getDuration).reduce(Duration.ZERO, Duration::plus);
 
+    if (currentStart != null){
+      Duration currentIntervalDuration = Duration.between(currentStart, clock.now());
+      return passDuration.plus(currentIntervalDuration);
+    }
+    return passDuration;
+  }
 
   public SessionRuntime(UUID sessionIdParam, EventBus bus, Clock clock){
     this.sessionId = sessionIdParam;
@@ -46,6 +55,14 @@ public class SessionRuntime implements EventListener<Event>{
 
   @Override
   public void onEvent(Event event) {
+    
+    if(event instanceof SessionEvent){
+      SessionEvent sessionEvent = (SessionEvent) event;
+      if(!sessionEvent.getSessionId().equals(sessionId)){
+        throw new IllegalStateException("the id of event not is the same of session id");
+      }
+    }
+
     Consumer<Event> handler = handlers.get(event.getClass());
 
     if (handler != null){
@@ -78,7 +95,7 @@ public class SessionRuntime implements EventListener<Event>{
     currentStart = null;
     state = State.STOPPED;
     Session session = finishSession();
-    bus.publishEvent(new SessionCompletedEvent(clock.now(),session));
+    bus.publishEvent(new SessionCompletedEvent(clock.now(), sessionId ,session));
 
   }
 
@@ -103,10 +120,6 @@ public class SessionRuntime implements EventListener<Event>{
   }
 
   public Session finishSession(){
-    Duration duration = intervals.stream().map(Interval::getDuration).reduce(Duration.ZERO, Duration::plus);   
-    if(duration.toMinutes() <= 5){
-      throw new IllegalStateException("the duration of session must be gratter than 5 minutes");
-    } 
     Session session = new Session(sessionId, intervals);
     return session;
   }

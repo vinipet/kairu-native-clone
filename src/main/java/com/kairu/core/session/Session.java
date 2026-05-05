@@ -40,13 +40,6 @@ public class Session {
       }
 
       this.intervals = List.copyOf(intervals);
-
-      Duration total = getTotalDuration();
-
-      if (total.compareTo(Duration.ofMinutes(5)) < 0) {
-        throw new IllegalArgumentException("Session must be at least 5 minutes");
-      }
-
       this.sessionId = sessionId;
       this.startedAt = intervals.getFirst().start;
       this.endedAt = intervals.getLast().end;

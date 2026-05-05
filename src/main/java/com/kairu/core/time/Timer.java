@@ -21,4 +21,6 @@ public interface Timer {
   public void resume();
 
   public State getState();
+
+  public void cancel();
 }

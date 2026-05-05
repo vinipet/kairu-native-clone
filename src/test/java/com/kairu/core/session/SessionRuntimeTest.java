@@ -18,16 +18,17 @@ public class SessionRuntimeTest{
   private SimpleEventBus bus;
   private ManualClock clock;
   private SessionRuntime runtime;
-  
+  private UUID id1;
+
   @BeforeEach
   void setup(){
-    bus = new SimpleEventBus();
-    clock = new ManualClock(Instant.now());
-    UUID id1 = UUID.randomUUID();
-    runtime = new SessionRuntime(id1, bus, clock);
+    this.bus = new SimpleEventBus();
+    this.clock = new ManualClock(Instant.now());
+    this.id1 = UUID.randomUUID();
+    this.runtime = new SessionRuntime(id1, bus, clock);
   }
-  private void startSession() {
-    runtime.onEvent(new TimerStartedEvent(clock.now()));
+  private void startSession(UUID id) {
+    runtime.onEvent(new TimerStartedEvent(clock.now(),id));
     clock.advanceSeconds(10);
   }
 
@@ -35,10 +36,10 @@ public class SessionRuntimeTest{
   @Test
   public void SessionRuntimeCanDefineCurrentStart(){
    
-    runtime.onEvent(new TimerStartedEvent(clock.now()));
+    runtime.onEvent(new TimerStartedEvent(clock.now(),id1));
     Instant start = clock.now();  
     clock.advanceSeconds(1000);
-    runtime.onEvent(new TimerStoppedEvent(clock.now()));
+    runtime.onEvent(new TimerStoppedEvent(clock.now(),id1));
       
     Session session = runtime.finishSession();
     assertEquals(start, session.getStartedAt());
@@ -47,13 +48,13 @@ public class SessionRuntimeTest{
   @Test
   public void PauseReallyCreateAIntervals(){
  
-    runtime.onEvent(new TimerStartedEvent(clock.now()));
+    runtime.onEvent(new TimerStartedEvent(clock.now(),id1));
     clock.advanceSeconds(1000);
-    runtime.onEvent(new TimerPausedEvent(clock.now()));
+    runtime.onEvent(new TimerPausedEvent(clock.now(),id1));
     clock.advanceSeconds(30);
-    runtime.onEvent(new TimerResumeEvent(clock.now()));
+    runtime.onEvent(new TimerResumeEvent(clock.now(),id1));
     clock.advanceSeconds(1000);
-    runtime.onEvent(new TimerStoppedEvent(clock.now()));
+    runtime.onEvent(new TimerStoppedEvent(clock.now(),id1));
     
     Session session = runtime.finishSession();
     assertEquals(2, session.getIntervals().size());
@@ -63,63 +64,63 @@ public class SessionRuntimeTest{
   @Test
   public void ThrowExeptionOnDuplicatedEvent(){
 
-    runtime.onEvent(new TimerStartedEvent(clock.now()));
+    runtime.onEvent(new TimerStartedEvent(clock.now(),id1));
     assertThrows(IllegalStateException.class, ()->{
-      runtime.onEvent(new TimerStartedEvent(clock.now()));
+      runtime.onEvent(new TimerStartedEvent(clock.now(),id1));
     });
     clock.advanceSeconds(1000);
-    runtime.onEvent(new TimerPausedEvent(clock.now()));
+    runtime.onEvent(new TimerPausedEvent(clock.now(),id1));
     assertThrows(IllegalStateException.class, ()->{
-      runtime.onEvent(new TimerPausedEvent(clock.now()));
+      runtime.onEvent(new TimerPausedEvent(clock.now(),id1));
     });
     clock.advanceSeconds(10);
-    runtime.onEvent(new TimerResumeEvent(clock.now()));
+    runtime.onEvent(new TimerResumeEvent(clock.now(),id1));
     assertThrows(IllegalStateException.class, ()->{
-      runtime.onEvent(new TimerResumeEvent(clock.now()));
+      runtime.onEvent(new TimerResumeEvent(clock.now(),id1));
     });
     clock.advanceSeconds(1000);
-    runtime.onEvent(new TimerStoppedEvent(clock.now()));
+    runtime.onEvent(new TimerStoppedEvent(clock.now(),id1));
     assertThrows(IllegalStateException.class, ()->{
-      runtime.onEvent(new TimerStoppedEvent(clock.now()));
+      runtime.onEvent(new TimerStoppedEvent(clock.now(),id1));
     });
   }
 
   @Test
   void idleState_ShouldOnlyAllowStart() {
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStoppedEvent(clock.now())));
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerPausedEvent(clock.now())));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStoppedEvent(clock.now(),id1)));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerPausedEvent(clock.now(),id1)));
         
-    assertDoesNotThrow(() -> runtime.onEvent(new TimerStartedEvent(clock.now())));
+    assertDoesNotThrow(() -> runtime.onEvent(new TimerStartedEvent(clock.now(),id1)));
   }
 
   @Test
   void runningState_ShouldNotAllowDuplicateStart() {
-    startSession(); // Helper para ir ao estado Running
+    startSession(id1);
 
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStartedEvent(clock.now())));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStartedEvent(clock.now(),id1)));
         
-    assertDoesNotThrow(() -> runtime.onEvent(new TimerPausedEvent(clock.now())));
+    assertDoesNotThrow(() -> runtime.onEvent(new TimerPausedEvent(clock.now(),id1)));
   }
 
   @Test
   void pausedState_ShouldOnlyAllowResume() {
-    startSession();
-    runtime.onEvent(new TimerPausedEvent(clock.now())); // Indo para Paused
+    startSession(id1);
+    runtime.onEvent(new TimerPausedEvent(clock.now(),id1)); // Indo para Paused
 
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStartedEvent(clock.now())));
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerPausedEvent(clock.now())));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStartedEvent(clock.now(),id1)));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerPausedEvent(clock.now(),id1)));
         
-    assertDoesNotThrow(() -> runtime.onEvent(new TimerResumeEvent(clock.now())));
+    assertDoesNotThrow(() -> runtime.onEvent(new TimerResumeEvent(clock.now(),id1)));
   }
 
   @Test
   void stoppedState_ShouldLockRuntime() {
-    startSession();
+    startSession(id1);
     clock.advanceSeconds(1000);
-    runtime.onEvent(new TimerStoppedEvent(clock.now())); 
+    runtime.onEvent(new TimerStoppedEvent(clock.now(),id1)); 
 
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStartedEvent(clock.now())));
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerResumeEvent(clock.now())));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStartedEvent(clock.now(),id1)));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerResumeEvent(clock.now(),id1)));
         
     Session session = runtime.finishSession();
     assertNotNull(session);
