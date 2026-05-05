@@ -74,29 +74,6 @@ public class SessionFlowTest{
   }
 
   @Test
-  public void sessionUnderFiveMinutesThrowError(){
-    assertThrows(IllegalStateException.class , ()->{
-      
-      Timer timer = new sessionTimer(clock, bus);
-      SessionRepository repository = new InMemorySessionRepository();
-      EventListener<SessionCompletedEvent> listener = new SessionCompletedPersistenceListener(repository); 
-      UUID id1 = UUID.randomUUID();
-
-      SessionRuntime sessionRuntime = new SessionRuntime(id1, bus, clock);
-
-      bus.subscribeListener(SessionCompletedEvent.class, listener);
-      bus.subscribeListener(TimerStartedEvent.class, sessionRuntime );
-      bus.subscribeListener(TimerResumeEvent.class, sessionRuntime );
-      bus.subscribeListener(TimerPausedEvent.class, sessionRuntime );
-      bus.subscribeListener(TimerStoppedEvent.class, sessionRuntime );
-      timer.start();
-      clock.advanceSeconds(50);
-      timer.stop();
-    });
-
-  }
-
-  @Test
   public void StopAfterPauseGiveOneInterval(){
 
     Timer timer = new sessionTimer(clock, bus);

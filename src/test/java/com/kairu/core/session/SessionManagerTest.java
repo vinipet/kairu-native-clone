@@ -4,6 +4,7 @@ import com.kairu.core.bus.SimpleEventBus;
 import com.kairu.core.event.TimerStartedEvent;
 import com.kairu.core.event.TimerStoppedEvent;
 import com.kairu.core.time.ManualClock;
+import com.kairu.core.time.StopResult;
 import com.kairu.core.time.TimerFactory;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -34,7 +35,7 @@ public class SessionManagerTest {
         manager.startSession();
         clock.advanceSeconds(1000);
         
-        manager.stopSession();
+        assertEquals(StopResult.SUCCESS,manager.stopSession()) ;
 
         assertDoesNotThrow(() -> manager.startSession(), "Deveria ser possível iniciar nova sessão após o stop");
     }

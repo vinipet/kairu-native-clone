@@ -64,10 +64,8 @@ public final class sessionTimer implements Timer{
 
       case STOPPED:
         throw new IllegalStateException("nao pode finalizar sessão ja finalizada");
-
       case IDLE:
         throw new IllegalStateException("nao pode finalizar uma sessão nao iniciada");
-
       case RUNNING:
         elapsedTime += Duration.between(startedAt, clock.now()).toSeconds();
         state = State.STOPPED;
@@ -83,6 +81,12 @@ public final class sessionTimer implements Timer{
 
     startedAt = clock.now();
     state = State.RUNNING;
-      bus.publishEvent(new TimerResumeEvent(clock.now()));
+    bus.publishEvent(new TimerResumeEvent(clock.now()));
+  }
+
+  public void cancel(){
+    state = State.IDLE;
+    startedAt = null;
+    elapsedTime = 0;
   }
 }

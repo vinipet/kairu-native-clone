@@ -1,5 +1,6 @@
 package com.kairu.core.session;
 
+import java.time.Duration;
 import java.util.UUID;
 
 import com.kairu.core.bus.EventBus;
@@ -8,6 +9,7 @@ import com.kairu.core.event.TimerStartedEvent;
 import com.kairu.core.event.TimerResumeEvent;
 import com.kairu.core.event.TimerStoppedEvent;
 import com.kairu.core.time.Clock;
+import com.kairu.core.time.StopResult;
 import com.kairu.core.time.Timer;
 import com.kairu.core.time.TimerFactory;
 
@@ -59,14 +61,30 @@ public class SessionManager{
     timer.pause();
   }
 
-  public void stopSession(){
+  public StopResult stopSession(){
     if(currentRuntime == null){
       throw new IllegalStateException("need a active session to stop");
     } 
+    
+    Duration duration = currentRuntime.getDuration();
 
-    timer.stop();
+    if(duration.toMinutes() <= 5){
+      return StopResult.TOO_SHORT;
+    } else {
+      timer.stop();
 
+      bus.unsubscribeForAll(currentRuntime);
+
+      currentRuntime = null;
+      currentSessionId = null;
+      timer = null;
+      return StopResult.SUCCESS;
+    }
+  }
+
+  public void cancelSession(){
     bus.unsubscribeForAll(currentRuntime);
+    timer.cancel();
 
     currentRuntime = null;
     currentSessionId = null;
