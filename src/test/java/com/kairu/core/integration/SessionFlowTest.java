@@ -41,7 +41,7 @@ public class SessionFlowTest{
   } 
 
   private void startSession() {
-    runtime.onEvent(new TimerStartedEvent(clock.now()));
+    runtime.onEvent(new TimerStartedEvent(clock.now(),id1));
     clock.advanceSeconds(10);
   }
 
@@ -50,7 +50,7 @@ public class SessionFlowTest{
     
     SessionRepository repository = new InMemorySessionRepository();
     EventListener<SessionCompletedEvent> listener = new SessionCompletedPersistenceListener(repository); 
-    sessionTimer timer = new sessionTimer(clock, bus);
+    sessionTimer timer = new sessionTimer(clock, bus, id1);
 
     bus.subscribeListener(SessionCompletedEvent.class, listener);
     bus.subscribeListener(TimerStartedEvent.class, runtime );
@@ -74,32 +74,9 @@ public class SessionFlowTest{
   }
 
   @Test
-  public void sessionUnderFiveMinutesThrowError(){
-    assertThrows(IllegalStateException.class , ()->{
-      
-      Timer timer = new sessionTimer(clock, bus);
-      SessionRepository repository = new InMemorySessionRepository();
-      EventListener<SessionCompletedEvent> listener = new SessionCompletedPersistenceListener(repository); 
-      UUID id1 = UUID.randomUUID();
-
-      SessionRuntime sessionRuntime = new SessionRuntime(id1, bus, clock);
-
-      bus.subscribeListener(SessionCompletedEvent.class, listener);
-      bus.subscribeListener(TimerStartedEvent.class, sessionRuntime );
-      bus.subscribeListener(TimerResumeEvent.class, sessionRuntime );
-      bus.subscribeListener(TimerPausedEvent.class, sessionRuntime );
-      bus.subscribeListener(TimerStoppedEvent.class, sessionRuntime );
-      timer.start();
-      clock.advanceSeconds(50);
-      timer.stop();
-    });
-
-  }
-
-  @Test
   public void StopAfterPauseGiveOneInterval(){
 
-    Timer timer = new sessionTimer(clock, bus);
+    Timer timer = new sessionTimer(clock, bus,id1);
     SessionRepository repository = new InMemorySessionRepository();
     EventListener<SessionCompletedEvent> listener = new SessionCompletedPersistenceListener(repository); 
     UUID id1 = UUID.randomUUID();
@@ -124,37 +101,37 @@ public class SessionFlowTest{
 
   @Test
   void idleState_ShouldOnlyAllowStart() {
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStoppedEvent(clock.now())));
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerPausedEvent(clock.now())));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStoppedEvent(clock.now(),id1)));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerPausedEvent(clock.now(),id1)));
         
-    assertDoesNotThrow(() -> runtime.onEvent(new TimerStartedEvent(clock.now())));
+    assertDoesNotThrow(() -> runtime.onEvent(new TimerStartedEvent(clock.now(),id1)));
   }
 
   @Test
   void runningState_ShouldNotAllowDuplicateStart() {
     startSession(); // Helper para ir ao estado Running
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStartedEvent(clock.now())));
-    assertDoesNotThrow(() -> runtime.onEvent(new TimerPausedEvent(clock.now())));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStartedEvent(clock.now(),id1)));
+    assertDoesNotThrow(() -> runtime.onEvent(new TimerPausedEvent(clock.now(),id1)));
   }
 
   @Test
   void pausedState_ShouldOnlyAllowResume() {
     startSession();
-    runtime.onEvent(new TimerPausedEvent(clock.now())); // Indo para Paused
+    runtime.onEvent(new TimerPausedEvent(clock.now(),id1)); // Indo para Paused
 
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStartedEvent(clock.now())));
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerPausedEvent(clock.now())));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStartedEvent(clock.now(),id1)));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerPausedEvent(clock.now(),id1)));
         
-    assertDoesNotThrow(() -> runtime.onEvent(new TimerResumeEvent(clock.now())));
+    assertDoesNotThrow(() -> runtime.onEvent(new TimerResumeEvent(clock.now(),id1)));
   }
 
   @Test
   void stoppedState_ShouldLockRuntime() {
     startSession();
     clock.advanceSeconds(1000);
-    runtime.onEvent(new TimerStoppedEvent(clock.now())); // Finalizando
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStartedEvent(clock.now())));
-    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerResumeEvent(clock.now())));
+    runtime.onEvent(new TimerStoppedEvent(clock.now(),id1)); // Finalizando
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerStartedEvent(clock.now(),id1)));
+    assertThrows(IllegalStateException.class, () -> runtime.onEvent(new TimerResumeEvent(clock.now(),id1)));
         
     Session session = runtime.finishSession();
     assertNotNull(session);

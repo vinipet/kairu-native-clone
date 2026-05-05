@@ -1,5 +1,7 @@
 package com.kairu.core.time;
 
+import java.util.UUID;
+
 import com.kairu.core.bus.EventBus;
 
 public class TimerFactory{
@@ -12,8 +14,8 @@ public class TimerFactory{
     this.clock = clock;
   }
 
-  public Timer createDefaultTimer(){
-    return new sessionTimer(this.clock, this.bus);
+  public Timer createDefaultTimer(UUID id){
+    return new sessionTimer(this.clock, this.bus, id);
   }
 
 }
