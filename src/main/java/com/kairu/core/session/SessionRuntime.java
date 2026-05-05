@@ -55,6 +55,14 @@ public class SessionRuntime implements EventListener<Event>{
 
   @Override
   public void onEvent(Event event) {
+    
+    if(event instanceof SessionEvent){
+      SessionEvent sessionEvent = (SessionEvent) event;
+      if(!sessionEvent.getSessionId().equals(sessionId)){
+        throw new IllegalStateException("the id of event not is the same of session id");
+      }
+    }
+
     Consumer<Event> handler = handlers.get(event.getClass());
 
     if (handler != null){
@@ -87,7 +95,7 @@ public class SessionRuntime implements EventListener<Event>{
     currentStart = null;
     state = State.STOPPED;
     Session session = finishSession();
-    bus.publishEvent(new SessionCompletedEvent(clock.now(),session));
+    bus.publishEvent(new SessionCompletedEvent(clock.now(), sessionId ,session));
 
   }
 

@@ -1,18 +1,30 @@
 package com.kairu.core.time;
 
 import java.time.Instant;
+import java.util.UUID;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.kairu.core.bus.SimpleEventBus;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SimpleTimerTest {
+  ManualClock clock;
+  SimpleEventBus bus;
+  UUID id;
+  sessionTimer timer;
+
+  @BeforeEach
+  public void setup(){
+    this.clock = new ManualClock(Instant.now());
+    this.bus = new SimpleEventBus();
+    this.id = UUID.randomUUID();
+    this.timer = new sessionTimer(clock, bus,id);
+  }
+
 
   @Test
   public void shouldCalculateTimeBetweenStartAndPause() {
-    ManualClock clock = new ManualClock(Instant.now());
-    SimpleEventBus bus = new SimpleEventBus();
-    sessionTimer timer = new sessionTimer(clock, bus);
-
     timer.start();
     clock.advanceSeconds(10);
     timer.pause();
@@ -22,10 +34,6 @@ public class SimpleTimerTest {
 
   @Test
   public void ThrowErrorWhenStartTwice(){
-    ManualClock clock = new ManualClock(Instant.now());
-    SimpleEventBus bus = new SimpleEventBus();
-    sessionTimer timer = new sessionTimer(clock, bus);
-
     timer.start();
 
     assertThrows(IllegalStateException.class, ()-> {
@@ -35,10 +43,6 @@ public class SimpleTimerTest {
 
   @Test
   public void ThrowErrorWhenPauseTwice(){
-    ManualClock clock = new ManualClock(Instant.now());
-    SimpleEventBus bus = new SimpleEventBus();
-    sessionTimer timer = new sessionTimer(clock, bus);
-
     timer.start();
     timer.pause();
     assertThrows(IllegalStateException.class, ()-> {
@@ -48,9 +52,6 @@ public class SimpleTimerTest {
 
   @Test
   public void shouldCalculateTimeBetweenStartAndPauseTwice(){
-    ManualClock clock = new ManualClock(Instant.now());
-    SimpleEventBus bus = new SimpleEventBus();
-    sessionTimer timer = new sessionTimer(clock, bus);
     timer.start();
     clock.advanceSeconds(5);
     timer.pause();
@@ -64,10 +65,6 @@ public class SimpleTimerTest {
 
   @Test
   public void timerStopMantainElapsedTime(){  
-    ManualClock clock = new ManualClock(Instant.now());
-    SimpleEventBus bus = new SimpleEventBus();
-    sessionTimer timer = new sessionTimer(clock, bus);
-
     timer.start();
     clock.advanceSeconds(5);
     timer.stop();
@@ -77,10 +74,6 @@ public class SimpleTimerTest {
   
   @Test
   public void timerCanStopWhenPaused(){
-    ManualClock clock = new ManualClock(Instant.now());
-    SimpleEventBus bus = new SimpleEventBus();
-    sessionTimer timer = new sessionTimer(clock, bus);
-
     timer.start();
     clock.advanceSeconds(5);
     timer.pause();
@@ -91,10 +84,6 @@ public class SimpleTimerTest {
 
   @Test
   public void advanceTimeOnPauseCantCountToElapsedTime(){
-  ManualClock clock = new ManualClock(Instant.now());
-  SimpleEventBus bus = new SimpleEventBus();
-  sessionTimer timer = new sessionTimer(clock, bus);
-  
   timer.start();
   clock.advanceSeconds(5);
   timer.pause();
@@ -110,10 +99,6 @@ public class SimpleTimerTest {
 
   @Test
   public void shouldReturnElapsedTimeWhileRunning() {
-    ManualClock clock = new ManualClock(Instant.now());
-    SimpleEventBus bus = new SimpleEventBus();
-    sessionTimer timer = new sessionTimer(clock, bus);
-
     timer.start();
     clock.advanceSeconds(5);
 

@@ -8,6 +8,7 @@ import com.kairu.core.event.TimerStoppedEvent;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import java.time.Instant;
+import java.util.UUID;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -117,12 +118,13 @@ class SimpleEventBusTest {
   void shouldNotRegisterDuplicateListeners() {
     SimpleEventBus bus = new SimpleEventBus();
     AtomicInteger count = new AtomicInteger(0);
+    UUID id = UUID.randomUUID();
     EventListener<TimerStartedEvent> listener = event -> count.incrementAndGet();
 
     bus.subscribeListener(TimerStartedEvent.class, listener);
     bus.subscribeListener(TimerStartedEvent.class, listener);
 
-    bus.publishEvent(new TimerStartedEvent(Instant.now()));
+    bus.publishEvent(new TimerStartedEvent(Instant.now(),id));
 
     assertEquals(1, count.get(), "O listener duplicado não deveria disparar duas vezes");
   }
@@ -132,6 +134,7 @@ class SimpleEventBusTest {
     
     SimpleEventBus bus = new SimpleEventBus();
     AtomicInteger count = new AtomicInteger(0);
+    UUID id = UUID.randomUUID();
     EventListener<Event> multiListener = event -> count.incrementAndGet();
 
     bus.subscribeListener(TimerStartedEvent.class, multiListener);
@@ -139,8 +142,8 @@ class SimpleEventBusTest {
 
     bus.unsubscribeForAll(multiListener);
 
-    bus.publishEvent(new TimerStartedEvent(Instant.now()));
-    bus.publishEvent(new TimerStoppedEvent(Instant.now()));
+    bus.publishEvent(new TimerStartedEvent(Instant.now(),id));
+    bus.publishEvent(new TimerStoppedEvent(Instant.now(),id));
 
     assertEquals(0, count.get(), "O listener deveria ter sido removido de todos os tipos de eventos");
   }
@@ -149,13 +152,14 @@ class SimpleEventBusTest {
   void shouldRemoveEmptySetsFromMap() {
         
     SimpleEventBus bus = new SimpleEventBus();
+    UUID id = UUID.randomUUID();
     EventListener<TimerStartedEvent> listener = event -> {};
         
     bus.subscribeListener(TimerStartedEvent.class, listener);
         
     bus.unsubscribeListener(listener, TimerStartedEvent.class);
         
-    assertDoesNotThrow(() -> bus.publishEvent(new TimerStartedEvent(Instant.now())));
+    assertDoesNotThrow(() -> bus.publishEvent(new TimerStartedEvent(Instant.now(),id)));
   }
 
 }

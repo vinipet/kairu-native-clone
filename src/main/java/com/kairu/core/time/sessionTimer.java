@@ -7,6 +7,7 @@ import com.kairu.core.event.TimerStartedEvent;
 import com.kairu.core.event.TimerStoppedEvent;
 
 import java.time.Instant;
+import java.util.UUID;
 import java.time.Duration;
 
 public final class sessionTimer implements Timer{
@@ -15,14 +16,16 @@ public final class sessionTimer implements Timer{
   private State state = Timer.State.IDLE;
   private Clock clock;
   private EventBus bus;
+  private UUID id;
 
   public State getState(){
     return state;
   }
   
-  public sessionTimer(Clock clock, EventBus bus){
+  public sessionTimer(Clock clock, EventBus bus, UUID id){
     this.clock = clock;
     this.bus = bus;
+    this.id = id;
   }
 
   public void start(){
@@ -30,7 +33,7 @@ public final class sessionTimer implements Timer{
       startedAt = clock.now();
       elapsedTime = 0;
       state = Timer.State.RUNNING;
-      bus.publishEvent(new TimerStartedEvent(startedAt));
+      bus.publishEvent(new TimerStartedEvent(startedAt,id));
 
     }else{
       throw new IllegalStateException("nao pode começar uma sessão antes de terminar outra");
@@ -45,7 +48,7 @@ public final class sessionTimer implements Timer{
 
     elapsedTime += Duration.between(startedAt, clock.now()).toSeconds();
     state = State.PAUSED;
-    bus.publishEvent(new TimerPausedEvent(clock.now()));
+    bus.publishEvent(new TimerPausedEvent(clock.now(),id));
   }
 
   public long getElapsedTime(){
@@ -59,7 +62,7 @@ public final class sessionTimer implements Timer{
     switch (state) {
       case PAUSED:
         state = State.STOPPED;
-        bus.publishEvent(new TimerStoppedEvent(clock.now()));
+        bus.publishEvent(new TimerStoppedEvent(clock.now(),id));
       break;
 
       case STOPPED:
@@ -69,7 +72,7 @@ public final class sessionTimer implements Timer{
       case RUNNING:
         elapsedTime += Duration.between(startedAt, clock.now()).toSeconds();
         state = State.STOPPED;
-        bus.publishEvent(new TimerStoppedEvent(clock.now()));
+        bus.publishEvent(new TimerStoppedEvent(clock.now(),id));
       break;
     }
   }  
@@ -81,7 +84,7 @@ public final class sessionTimer implements Timer{
 
     startedAt = clock.now();
     state = State.RUNNING;
-    bus.publishEvent(new TimerResumeEvent(clock.now()));
+    bus.publishEvent(new TimerResumeEvent(clock.now(),id));
   }
 
   public void cancel(){

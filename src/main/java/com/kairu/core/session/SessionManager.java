@@ -42,7 +42,7 @@ public class SessionManager{
     bus.subscribeListener(TimerPausedEvent.class, currentRuntime);
     bus.subscribeListener(TimerResumeEvent.class, currentRuntime);
     bus.subscribeListener(TimerStoppedEvent.class, currentRuntime);
-    timer = factory.createDefaultTimer();
+    timer = factory.createDefaultTimer(currentSessionId);
     timer.start();
 
   }
@@ -83,8 +83,8 @@ public class SessionManager{
   }
 
   public void cancelSession(){
-    bus.unsubscribeForAll(currentRuntime);
     timer.cancel();
+    bus.unsubscribeForAll(currentRuntime);
 
     currentRuntime = null;
     currentSessionId = null;
