@@ -79,6 +79,8 @@ O comando `exit` verifica se existe uma sessão em progresso. Caso positivo, int
 
 Como o KAIRu é uma aplicação Java leve, você pode compilá-lo e executá-lo em qualquer máquina com o **JDK 17** ou superior instalado.
 
+a versão que tem CLI(a interface de teminal) esta na branch CLI. A branch main tem apenas o core
+
 ### 1. Pré-requisitos
 - **Java JDK 17+**
 - **Maven**
