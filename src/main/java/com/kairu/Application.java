@@ -1,117 +1,201 @@
 package com.kairu;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.util.List;
 import java.util.Scanner;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.TimeUnit;
 
 import com.kairu.core.bus.EventBus;
-import com.kairu.core.bus.EventListener;
 import com.kairu.core.bus.SimpleEventBus;
 import com.kairu.core.event.SessionCompletedEvent;
-import com.kairu.core.session.InMemorySessionRepository;
-import com.kairu.core.session.Session;
-import com.kairu.core.session.SessionCompletedPersistenceListener;
-import com.kairu.core.session.SessionManager;
-import com.kairu.core.session.SessionRepository;
-import com.kairu.core.time.Clock;
-import com.kairu.core.time.RealClock;
-import com.kairu.core.time.TimerFactory;
-
+import com.kairu.core.session.*;
+import com.kairu.core.time.*;
 
 public class Application {
 
-  public static void main(String[] args) {
+    private static final String SAVE_CURSOR = "\033[s";
+    private static final String RESTORE_CURSOR = "\033[u";
+    private static final String MOVE_UP = "\033[1A";
+    private static final String ERASE_LINE = "\033[2K";
+    private static final String RESET = "\u001B[0m";
+    private static final String GREEN = "\u001B[32m";
+    private static final String YELLOW = "\u001B[33m";
+    private static final String BLUE = "\u001B[34m";
+    private static final String CYAN = "\u001B[36m";
+    private static final String RED = "\u001B[31m";
+    private static final String BOLD = "\u001B[1m";
 
-    EventBus bus = new SimpleEventBus();
-    Clock clock = new RealClock();
-    TimerFactory factory = new TimerFactory(clock, bus);
-    SessionManager manager = new SessionManager(bus, clock, factory);
-    SessionRepository repository = new InMemorySessionRepository();
-    EventListener<SessionCompletedEvent> repoListener = new SessionCompletedPersistenceListener(repository);
-    bus.subscribeListener(SessionCompletedEvent.class, repoListener);
-
-    Scanner scanner = new Scanner(System.in);
-    boolean running = true;
-
-    System.out.println("O kairu esta iniciando...");
-    System.out.println("os comandos basicos do sistema são:");
-    System.out.printf("%-15s ----------------> %s%n", "start", "inicia a contagem");
-    System.out.printf("%-15s ----------------> %s%n", "pause", "pausa a contagem");
-    System.out.printf("%-15s ----------------> %s%n", "resume", "resume a contagem");
-    System.out.printf("%-15s ----------------> %s%n", "stop", "finaliza a contagem");
-    System.out.printf("%-15s ----------------> %s%n", "exit", "finaliza a aplicação");
-    System.out.printf("%-15s ----------------> %s%n", "list", "mostra a lista de sessões");
-    System.out.println("inicie quando estiver pronto");
-    System.out.println("rodando >>>");
+    private static SessionManager manager;
+    private static SessionRepository repository;
+    private static ScheduledExecutorService scheduler;
+    private static Scanner scanner = new Scanner(System.in);
     
+    private static boolean isRunning = false;
+    private static boolean isPaused = false;
+    private static Duration accumulatedTime = Duration.ZERO;
+    private static Instant lastStartTime;
 
-    while(running){
-      String input = scanner.nextLine().toLowerCase().trim();
-      
-      switch (input) {
-        case "start":
-          startSession(manager);
-        break;
-        case "pause":
-          pauseSession(manager);
-        break;
-        case "resume":
-          resumeSession(manager);
-        break;
-        case "stop":
-         stopSession(manager);
-        break;
-        case "exit":
-          running = false;
-        break;
-        case "list":
-          listSession(repository);
-        break;
-        default:
-        break;
-      }
-    }
-    scanner.close();
+    // Sistema de Notificação no Timer
+    private static String statusMessage = null;
+    private static Instant messageExpiry = null;
 
-    System.out.println(">>>  fechando aplicação");
-	}
+    public static void main(String[] args) {
+        EventBus bus = new SimpleEventBus();
+        Clock clock = new RealClock();
+        TimerFactory factory = new TimerFactory(clock, bus);
+        manager = new SessionManager(bus, clock, factory);
+        repository = new InMemorySessionRepository();
+        
+        bus.subscribeListener(SessionCompletedEvent.class, new SessionCompletedPersistenceListener(repository));
 
-  private static void startSession(SessionManager manager){
-    try {
-      manager.startSession();
-      System.out.println("<<< sessão iniciada >>>");
-    } catch (Exception e) {
-      System.out.println(">>>  " + e.getMessage());
-    }
-  }
-  private static void pauseSession(SessionManager manager){
-    try {
-      manager.pauseSession();
-      System.out.println("<<< sessão pausada >>>");
-    } catch (Exception e) {
-      System.out.println(">>>  " + e.getMessage());
-    }
-  }
-  private static void resumeSession(SessionManager manager){
-    try {
-      manager.resumeSession();
-      System.out.println("<<< sessão retomada >>>");
-    } catch (Exception e) {
-      System.out.println(">>>  " + e.getMessage());
-    }
-  }
-  private static void stopSession(SessionManager manager){
-    try {
-      manager.stopSession();
-      System.out.println("<<< sessão acabou >>>");
-    } catch (Exception e) {
-      System.out.println(">>>  " + e.getMessage());
-    }
-  }
-  private static void listSession(SessionRepository repository){
-    List<Session> list = repository.findAll();
-    list.forEach((session) -> {
-      System.out.println(session.sessionId + ">>" + session.getTotalDuration());
-    });
-  }
+        showBanner();
+        System.out.println("\n\n"); 
 
+        while (true) {
+            System.out.print(BOLD + CYAN + "kairu > " + RESET);
+            if (!scanner.hasNextLine()) break;
+            String input = scanner.nextLine().toLowerCase().trim();
+
+            if (input.equals("exit")) {
+                if (confirmExit()) break;
+                else continue;
+            }
+
+            switch (input) {
+                case "start"  -> startSession();
+                case "pause"  -> pauseSession();
+                case "resume" -> resumeSession();
+                case "stop"   -> stopSession();
+                case "list"   -> listSessions();
+                case "help"   -> showHelp();
+                case ""       -> {}
+                default       -> setStatusMessage(YELLOW + "Comando desconhecido." + RESET, 3);
+            }
+        }
+        
+        stopLiveTimer();
+        System.out.println(BLUE + "Até logo!" + RESET);
+        System.exit(0);
+    }
+
+    private static void setStatusMessage(String message, int seconds) {
+        statusMessage = message;
+        messageExpiry = Instant.now().plusSeconds(seconds);
+    }
+
+    private static boolean confirmExit() {
+        if (!isRunning) return true;
+        
+        stopLiveTimer(); // Para o timer para não bagunçar a pergunta
+        System.out.print(RED + BOLD + "\r⚠ Sessão em progresso! Deseja cancelar e sair? [s/n]: " + RESET);
+        String choice = scanner.nextLine().toLowerCase().trim();
+        
+        if (choice.equals("s")) {
+            return true;
+        } else {
+            System.out.print(MOVE_UP + "\r" + ERASE_LINE); // Limpa a pergunta
+            startLiveTimer(); // Reinicia o timer visual
+            return false;
+        }
+    }
+
+    private static void startSession() {
+        if (isRunning) return;
+        manager.startSession();
+        isRunning = true;
+        isPaused = false;
+        accumulatedTime = Duration.ZERO;
+        lastStartTime = Instant.now();
+        startLiveTimer();
+    }
+
+    private static void pauseSession() {
+        if (isRunning && !isPaused) {
+            manager.pauseSession();
+            accumulatedTime = accumulatedTime.plus(Duration.between(lastStartTime, Instant.now()));
+            isPaused = true;
+        }
+    }
+
+    private static void resumeSession() {
+        if (isRunning && isPaused) {
+            manager.resumeSession();
+            lastStartTime = Instant.now();
+            isPaused = false;
+        }
+    }
+
+    private static void stopSession() {
+        if (!isRunning) return;
+
+        StopResult result = manager.stopSession();
+        
+        if (result == StopResult.TOO_SHORT) {
+            setStatusMessage(RED + BOLD + "⚠ Sessão muito curta (mín. 5min)!" + RESET, 5);
+        } else {
+            stopLiveTimer();
+            isRunning = false;
+            isPaused = false;
+            System.out.println(BLUE + "\r✔ Sessão salva!" + RESET + "\n\n");
+        }
+    }
+
+    private static void startLiveTimer() {
+        if (scheduler != null) scheduler.shutdownNow();
+        scheduler = Executors.newSingleThreadScheduledExecutor();
+        String[] spinner = { "⏳", "⌛"};
+        
+        scheduler.scheduleAtFixedRate(() -> {
+            System.out.print(SAVE_CURSOR);
+            System.out.print(MOVE_UP + "\r" + ERASE_LINE);
+
+            // Prioridade 1: Mostrar mensagem de erro/aviso se existir e não expirou
+            if (statusMessage != null && Instant.now().isBefore(messageExpiry)) {
+                System.out.print(statusMessage);
+            } 
+            // Prioridade 2: Mostrar o Timer se estiver rodando
+            else if (isRunning) {
+                Duration currentRun = isPaused ? Duration.ZERO : Duration.between(lastStartTime, Instant.now());
+                Duration totalDisplay = accumulatedTime.plus(currentRun);
+                
+                String time = String.format("%02d:%02d:%02d", 
+                    totalDisplay.toHours(), totalDisplay.toMinutesPart(), totalDisplay.toSecondsPart());
+
+                if (!isPaused) {
+                    String icon = spinner[(int) (System.currentTimeMillis() / 500 % spinner.length)];
+                    System.out.print(YELLOW + icon + " Foco: " + BOLD + time + RESET + " | 'stop' para encerrar");
+                } else {
+                    System.out.print(RED + BOLD + "‖ PAUSADO (" + time + ")" + RESET);
+                }
+            }
+
+            System.out.print(RESTORE_CURSOR);
+            System.out.flush();
+        }, 0, 250, TimeUnit.MILLISECONDS);
+    }
+
+    private static void stopLiveTimer() {
+        if (scheduler != null) scheduler.shutdownNow();
+        System.out.print(SAVE_CURSOR + MOVE_UP + "\r" + ERASE_LINE + RESTORE_CURSOR);
+        System.out.flush();
+    }
+
+    private static void listSessions() {
+        List<Session> sessions = repository.findAll();
+        System.out.println(BOLD + "\n--- HISTÓRICO ---" + RESET);
+        if (sessions.isEmpty()) System.out.println("Vazio.");
+        else sessions.forEach(s -> System.out.printf("%s | %d min%n", s.sessionId, s.getTotalDuration().toMinutes()));
+        System.out.println();
+    }
+
+    private static void showBanner() {
+        System.out.println(BOLD + BLUE + "=== KAIRU PRODUCTIVITY TIMER ===" + RESET);
+    }
+
+    private static void showHelp() {
+        System.out.println("\nComandos: start, pause, resume, stop, list, exit\n");
+    }
 }
