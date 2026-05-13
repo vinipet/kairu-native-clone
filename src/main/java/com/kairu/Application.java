@@ -21,9 +21,9 @@ public class Application {
     private static final String MOVE_UP = "\033[1A";
     private static final String ERASE_LINE = "\033[2K";
     private static final String RESET = "\u001B[0m";
-    private static final String GREEN = "\u001B[32m";
     private static final String YELLOW = "\u001B[33m";
     private static final String BLUE = "\u001B[34m";
+    private static final String GREEN = "\u001B[32m";
     private static final String CYAN = "\u001B[36m";
     private static final String RED = "\u001B[31m";
     private static final String BOLD = "\u001B[1m";
@@ -33,9 +33,6 @@ public class Application {
     private static ScheduledExecutorService scheduler;
     private static Scanner scanner = new Scanner(System.in);
     
-    private static boolean isRunning = false;
-    private static boolean isPaused = false;
-    private static Duration accumulatedTime = Duration.ZERO;
     private static Instant lastStartTime;
 
     // Sistema de Notificação no Timer
@@ -80,14 +77,13 @@ public class Application {
         System.out.println(BLUE + "Até logo!" + RESET);
         System.exit(0);
     }
-
     private static void setStatusMessage(String message, int seconds) {
         statusMessage = message;
         messageExpiry = Instant.now().plusSeconds(seconds);
     }
 
     private static boolean confirmExit() {
-        if (!isRunning) return true;
+        if(manager.getCurrentRuntime() != null) return true;
         
         stopLiveTimer(); // Para o timer para não bagunçar a pergunta
         System.out.print(RED + BOLD + "\r⚠ Sessão em progresso! Deseja cancelar e sair? [s/n]: " + RESET);
@@ -103,33 +99,27 @@ public class Application {
     }
 
     private static void startSession() {
-        if (isRunning) return;
+        if (manager.getCurrentRuntime() != null) return;
         manager.startSession();
-        isRunning = true;
-        isPaused = false;
-        accumulatedTime = Duration.ZERO;
         lastStartTime = Instant.now();
         startLiveTimer();
     }
 
     private static void pauseSession() {
-        if (isRunning && !isPaused) {
+        if (manager.getCurrentRuntime() != null && manager.getTimer().getState() == Timer.State.RUNNING) {
             manager.pauseSession();
-            accumulatedTime = accumulatedTime.plus(Duration.between(lastStartTime, Instant.now()));
-            isPaused = true;
         }
     }
 
     private static void resumeSession() {
-        if (isRunning && isPaused) {
+        if (manager.getCurrentRuntime() != null && manager.getTimer().getState() == Timer.State.PAUSED) {
             manager.resumeSession();
             lastStartTime = Instant.now();
-            isPaused = false;
         }
     }
 
     private static void stopSession() {
-        if (!isRunning) return;
+        if (manager.getCurrentRuntime() == null) return;
 
         StopResult result = manager.stopSession();
         
@@ -137,9 +127,7 @@ public class Application {
             setStatusMessage(RED + BOLD + "⚠ Sessão muito curta (mín. 5min)!" + RESET, 5);
         } else {
             stopLiveTimer();
-            isRunning = false;
-            isPaused = false;
-            System.out.println(BLUE + "\r✔ Sessão salva!" + RESET + "\n\n");
+              System.out.println(BLUE + "\r✔ Sessão salva!" + RESET + "\n\n");
         }
     }
 
@@ -157,14 +145,14 @@ public class Application {
                 System.out.print(statusMessage);
             } 
             // Prioridade 2: Mostrar o Timer se estiver rodando
-            else if (isRunning) {
-                Duration currentRun = isPaused ? Duration.ZERO : Duration.between(lastStartTime, Instant.now());
-                Duration totalDisplay = accumulatedTime.plus(currentRun);
+            else if (manager.getCurrentRuntime() != null) {
+                Duration currentRun = (manager.getTimer().getState() == Timer.State.PAUSED) ? Duration.ZERO : Duration.between(lastStartTime, Instant.now());
+                Duration totalDisplay = manager.getCurrentRuntime().getDuration().plus(currentRun);
                 
                 String time = String.format("%02d:%02d:%02d", 
                     totalDisplay.toHours(), totalDisplay.toMinutesPart(), totalDisplay.toSecondsPart());
 
-                if (!isPaused) {
+                if (!(Timer.State.PAUSED == manager.getTimer().getState())) {
                     String icon = spinner[(int) (System.currentTimeMillis() / 500 % spinner.length)];
                     System.out.print(YELLOW + icon + " Foco: " + BOLD + time + RESET + " | 'stop' para encerrar");
                 } else {
@@ -196,6 +184,17 @@ public class Application {
     }
 
     private static void showHelp() {
-        System.out.println("\nComandos: start, pause, resume, stop, list, exit\n");
-    }
+    System.out.println(CYAN + BOLD + "\nComandos disponíveis:" + RESET);
+
+    String format = "  " + GREEN + "%-10s" + RESET + " ------> %s%n";
+
+
+    System.out.printf(format, "start", "Inicia uma nova sessão de foco");
+    System.out.printf(format, "pause", "Pausa a sessão atual");
+    System.out.printf(format, "resume", "Retoma uma sessão pausada");
+    System.out.printf(format, "stop", "Finaliza e salva a sessão");
+    System.out.printf(format, "list", "Exibe seu histórico de estudos");
+    System.out.printf(format, "exit", "Sai do KAIRu");
+    System.out.println();    
+  }
 }
