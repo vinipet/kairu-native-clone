@@ -123,4 +123,8 @@ public class SessionRuntime implements EventListener<Event>{
     Session session = new Session(sessionId, intervals);
     return session;
   }
+
+  public Instant getCurrentStart(){
+    return currentStart;
+  }
 }

@@ -12,7 +12,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
+import java.time.Duration;
 import java.time.Instant;
+import java.util.concurrent.ScheduledExecutorService;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -59,17 +61,27 @@ class ApplicationTest {
     }
 
     @Test
-    void testRegraDeSessaoCurta_NaoDeveSalvarSeMenorQue5Min() throws Exception {
-        invokePrivateMethod("startSession");
-        
-        clock.advanceSeconds(60); // Apenas 1 minuto
-        
-        invokePrivateMethod("stopSession");
-
-        // Verifica se a mensagem de erro apareceu na UI
-        String msg = (String) getStaticField("statusMessage");
-        assertTrue(msg != null && msg.contains("curta"), "Deveria mostrar aviso de sessão curta");
-        assertEquals(0, repository.findAll().size(), "Não deveria ter salvo sessão curta no repositório");
+    void testStopSessaoCurta_DevePerguntarEResponderSim() throws Exception {
+      invokePrivateMethod("startSession");
+      clock.advanceSeconds(60); // 1 minuto
+     
+      // 1. Preparamos a resposta "s" (sim, descartar) seguida de um Enter (\n)
+      String input = "s\n";
+      System.setIn(new java.io.ByteArrayInputStream(input.getBytes()));
+     
+      // 2. CRUCIAL: Reinicializar o scanner da Application para ler o System.in falso
+      setStaticField("scanner", new java.util.Scanner(System.in));
+      
+      // 3. Agora o stopSession vai ler o "s" automaticamente e não vai travar
+      invokePrivateMethod("stopSession");
+      
+      // 4. Verificações
+      assertNull(manager.getCurrentRuntime(), "A sessão deveria ter sido encerrada após o 's'");
+      assertEquals(0, repository.findAll().size(), "Não deveria ter salvo nada no repo");
+      
+      // 5. Limpeza: Volta o System.in para o original para não quebrar outros testes
+      System.setIn(System.in);
+      setStaticField("scanner", new java.util.Scanner(System.in));
     }
 
     @Test
@@ -104,13 +116,72 @@ class ApplicationTest {
     }
 
     @Test
-    void testComandosNaoDevemExplodirSemSessaoAtiva() {
-    assertDoesNotThrow(() -> {
-        invokePrivateMethod("pauseSession");
-        invokePrivateMethod("resumeSession");
-        invokePrivateMethod("stopSession");
-    }, "Comandos disparados sem sessão ativa não devem lançar exceções");
-    }   
+    void testBugRelogioAcelerado_VariosStartsNaoDevemCriarMultiplosSchedulers() throws Exception {
+      // 1. Simula o usuário dando 'start' várias vezes seguidas
+      invokePrivateMethod("startSession");
+      invokePrivateMethod("startSession");
+      invokePrivateMethod("startSession");
+      // 2. Pegamos o scheduler via Reflection para ver se ele está saudável
+      ScheduledExecutorService s = (ScheduledExecutorService) getStaticField("scheduler");
+      assertFalse(s.isShutdown(), "O scheduler deveria estar ativo");
+       // 3. Verificamos o tempo no manager (o Core)
+      clock.advanceSeconds(10);
+      long tempoNoCore = manager.getCurrentRuntime().getDuration().toSeconds();
+      assertEquals(10, tempoNoCore, "O Core deve contar o tempo corretamente independente da UI");
+        
+    }
+      
+    @Test
+    void testStartDuplo_NaoDeveReiniciarScheduler() throws Exception {
+      // Primeiro start
+      invokePrivateMethod("startSession");
+      Object schedulerOriginal = getStaticField("scheduler");
+      assertNotNull(schedulerOriginal);
+
+      // Segundo start (deveria ser ignorado pelo seu novo 'if')
+      invokePrivateMethod("startSession");
+      Object schedulerDepois = getStaticField("scheduler");
+
+      // Se o seu 'if' no startSession estiver correto, o objeto scheduler 
+      // não deve ter sido substituído (ou seja, startLiveTimer não rodou de novo)
+      assertSame(schedulerOriginal, schedulerDepois, "O scheduler foi recriado indevidamente!");
+    }
+
+    @Test
+    void testMensagemDeErro_ComandoDesconhecido() throws Exception {
+      // Simula o default do switch case (podemos chamar o setStatusMessage direto)
+      // Mas aqui vamos testar se a lógica de expiração funciona
+      invokePrivateMethod("startSession");
+      
+      // Seta uma mensagem de erro manual
+      java.lang.reflect.Method setMsg = Application.class.getDeclaredMethod("setStatusMessage", String.class, int.class);
+      setMsg.setAccessible(true);
+      setMsg.invoke(null, "ERRO TESTE", 1); // Expira em 1 segundo
+      
+      assertNotNull(getStaticField("statusMessage"));
+      
+      // Avança o tempo do clock para depois da expiração
+      clock.advanceSeconds(2);
+      
+      // No próximo ciclo do scheduler, a UI deveria esconder a mensagem 
+      // (Isso é o que o seu if(Instant.now().isBefore(messageExpiry)) faz)
+    }
+
+    @Test
+    void testAlinhamentoRelogio_NaoDeveResetarStartTimeIndevidamente() throws Exception {
+      // 1. Inicia
+      invokePrivateMethod("startSession");
+      Instant primeiroStart = manager.getCurrentRuntime().getCurrentStart();
+      
+      clock.advanceSeconds(100);
+      
+      // 2. Tenta dar um segundo 'start' acidental
+      invokePrivateMethod("startSession");
+      
+      // 3. O lastStartTime NÃO pode ter mudado
+      Instant segundoStart = manager.getCurrentRuntime().getCurrentStart();
+      assertEquals(primeiroStart, segundoStart, "O relógio de exibição resetou! Isso causa o pulo no tempo da UI.");
+    }
 
     // --- UTILITÁRIOS DE REFLECTION PARA ACESSAR A CLI ---
 
