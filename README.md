@@ -1,242 +1,112 @@
-# KAIRu — Core Architecture Overview
+# 🚀 KAIRu — Core Architecture & Implementation
 
-KAIRu é uma aplicação de organização de estudos baseada em tempo (pomodoro-like), projetada para rodar de forma leve em segundo plano, com foco em extensibilidade, baixo consumo de recursos e arquitetura sólida.
+O KAIRu evoluiu de um conceito orientado a eventos para uma ferramenta de produtividade robusta via CLI. Ele combina a leveza do Java puro com uma interface dinâmica capaz de gerenciar ciclos de foco, pausas e persistência de dados.
 
-Este documento descreve **as decisões arquiteturais do core**, explicando **o porquê** de cada escolha.
-
----
-
-## 🎯 Objetivo do Projeto
-
-O KAIRu tem como objetivo:
-
-- Organizar sessões de estudo baseadas em tempo
-- Rodar em segundo plano com consumo mínimo de recursos
-- Ser altamente extensível via mods
-- Manter um core simples, previsível e testável
-- Manter UI totalmente desacoplada da lógica principal
-
-O projeto **não é centrado em interface**, mas em **regras, eventos e tempo**.
+Este documento detalha a arquitetura atual e as decisões técnicas que sustentam o sistema.
 
 ---
 
-## 🧠 Princípio Fundamental
+## 🎯 Estado Atual do Projeto
 
-> O KAIRu é um sistema **orientado a eventos**, não um loop que fica rodando constantemente.
-
-Isso significa:
-
-- Nenhum `while(true)` consumindo CPU
-- O sistema só “acorda” quando:
-  - o usuário interage
-  - um evento de tempo ocorre
-- Quando não há cronômetro ativo, o sistema fica efetivamente “congelado”
+O KAIRu hoje é capaz de:
+- **Gerenciar Sessões de Foco:** Fluxo completo de Início -> Pausa -> Retomada -> Finalização.
+- **Persistência em Tempo Real:** Registro de sessões no histórico (InMemory ou Persistente).
+- **UI Dinâmica (Rich CLI):** Uso de sequências de escape ANSI para manter um cronômetro vivo sem bloquear o input do usuário.
+- **Validação de Regras de Negócio:** Proteção contra sessões curtas demais e estados que poderiam quebrar a lógica de tempo.
 
 ---
 
-## ❌ Por que não usar Spring no core
+## 🏗️ Arquitetura Implementada
 
-O projeto pode ter sido inicializado via Spring Boot, mas:
+A estrutura atual segue o padrão de **Desacoplamento por Camadas**:
 
-- Spring é ideal para:
-  - aplicações web
-  - APIs
-  - serviços HTTP
-- Ele adiciona:
-  - lifecycle próprio
-  - dependências implícitas
-  - acoplamento via annotations
+### 1. Camada de Aplicação (`com.kairu.Application`)
+Atua como o **Orquestrador de UI**.
+- Gerencia o loop de entrada do usuário via `Scanner`.
+- Controla o `ScheduledExecutorService` para o cronômetro visual em background.
+- **Diferencial:** Implementa uma "Status Line" manual via ANSI (`MOVE_UP`, `SAVE_CURSOR`), permitindo que o cronômetro e o prompt de comando coexistam sem conflitos visuais.
 
-Para um app:
-- leve
-- orientado a eventos
-- em background
-- com sistema de mods
+### 2. Camada de Serviço (`SessionManager`)
+O "Cérebro" do sistema.
+- Detém a máquina de estados da sessão (RUNNING, PAUSED, STOPPED).
+- Coordena o uso do `Clock` para garantir a precisão temporal.
+- Aplica a regra de "Sessão Curta": impede o fechamento de sessões com menos de 5 minutos, mantendo o foco ativo.
 
-👉 **Java puro é mais simples, mais leve e mais controlável**.
-
-Nada impede usar Spring futuramente em:
-- UI
-- serviços externos
-
-Mas o **core não depende de Spring**.
+### 3. Camada de Eventos (`EventBus`)
+O sistema de comunicação desacoplada.
+- Quando uma sessão é finalizada com sucesso, o `SessionManager` emite um `SessionCompletedEvent`.
+- O `PersistenceListener` escuta esse evento e salva os dados no `Repository`, garantindo que a lógica de negócio não dependa da lógica de armazenamento.
 
 ---
 
-## 🧱 Arquitetura em Alto Nível
+## 🧠 Decisões Arquiteturais Chave
 
-┌─────────────┐
-│ UI │ (tray, GUI, CLI, etc)
-└──────┬──────┘
-│ escuta eventos
-┌──────▼──────┐
-│ Core │ ← Java puro
-│ (Event-Driven)
-└──────┬──────┘
-│ emite eventos
-┌──────▼──────┐
-│ Mods │ (Lua no futuro)
-└─────────────┘
+### ⏱️ Gestão de Tempo e Pausa (Pause-Aware)
+Para que o cronômetro visual e o tempo salvo sejam idênticos, o sistema utiliza um cálculo de **Duração Acumulada**:
+- O tempo não é um simples `agora - início`.
+- Ao pausar, o tempo decorrido é somado a um acumulador (`accumulatedTime`).
+- Ao retomar, um novo ponto de referência (`lastStartTime`) é definido.
+- Isso garante que o tempo parado no café ou descanso não "suje" suas métricas de produtividade.
 
+### 🎨 UI Não-Bloqueante com Notificações
+Implementamos um sistema de **Buffer de Status**:
+- Mensagens de erro ou avisos (ex: "Sessão muito curta") ganham prioridade visual por 5 segundos.
+- O Timer detecta a expiração dessas mensagens e retoma a exibição do relógio automaticamente, sem intervenção do usuário.
 
-### Regra de Ouro
-
-- O core **não conhece a UI**
-- O core **não conhece mods**
-- O core apenas **emite eventos**
+### 🛡️ Trava de Segurança (Exit Guard)
+O comando `exit` verifica se existe uma sessão em progresso. Caso positivo, interrompe o timer visual e exige uma confirmação `[s/n]`. Se a saída for negada, o ambiente de trabalho é restaurado imediatamente.
 
 ---
 
-## ⚙️ Modelo Mental do Core
+## 🧱 Diagrama de Fluxo (Mental Model)
 
-O core é estruturado em **três pilares principais**.
-
----
-
-### 1️⃣ Eventos
-
-Eventos representam **fatos que aconteceram no sistema**.
-
-Exemplos:
-- Cronômetro iniciado
-- Cronômetro finalizado
-- Sessão interrompida
-- Tag adicionada
-
-Características dos eventos:
-
-- São **imutáveis**
-- Não contêm lógica
-- Não sabem quem os consome
-- Representam apenas *o que aconteceu*
+1. **Input:** Usuário digita `start`.
+2. **Manager:** Muda estado para `RUNNING` e notifica o `Clock`.
+3. **Application:** Inicia Thread de background para desenhar o Timer na linha acima do prompt.
+4. **Pause/Resume:** Ajustam o acumulador de tempo para manter a precisão.
+5. **Stop:** Manager valida a duração. Se válida, emite evento -> Listener salva -> Thread do timer morre.
 
 ---
 
-### 2️⃣ EventBus
+## 🧩 Modelo de Dados
 
-O EventBus é o barramento central de eventos.
-
-Responsabilidades:
-- Receber eventos
-- Distribuir eventos para todos os interessados
-- Não conhecer regras de negócio
-- Não conhecer UI nem mods
-
-Ele funciona como:
-> “Alguém emite um evento; quem quiser escutar, escuta.”
-
-Decisão inicial:
-- EventBus **síncrono**
-- Execução imediata
-- Ordem previsível
-- Simples de testar
+- **Eventos:** Imutáveis, contendo o timestamp exato do ocorrido.
+- **Sessions:** Objetos de valor que representam o esforço concluído, prontos para análise de dados.
 
 ---
 
-### 3️⃣ Tempo (Clock)
+## 📥 Instalação e Execução
 
-O tempo nunca é acessado diretamente via `System.currentTimeMillis`.
+Como o KAIRu é uma aplicação Java leve, você pode compilá-lo e executá-lo em qualquer máquina com o **JDK 17** ou superior instalado.
 
-Motivos:
-- Facilitar testes
-- Garantir previsibilidade
-- Permitir análise de dados no futuro
+a versão que tem CLI(a interface de teminal) esta na branch CLI. A branch main tem apenas o core
 
-O tempo é abstraído por um `Clock`:
+### 1. Pré-requisitos
+- **Java JDK 17+**
+- **Maven**
 
-- Em produção → relógio real
-- Em testes → tempo controlado
+### 2. Compilação
+No diretório raiz do projeto, execute:
+```bash
+mvn clean package
+```
+Isso criará uma pasta target/ contendo o arquivo executável (ex: kairu-1.0.0.jar).
 
----
+### 3. Execução
+Para rodar a aplicação:
+```Bash
+java -jar target/kairu-1.0.0.jar
+```
+### 4. Dica: Atalho no Terminal (Linux/macOS)
 
-## ⏱️ Eventos e Tempo
+Adicione um alias no seu .bashrc ou .zshrc para acesso rápido:
+```Bash
+alias kairu='java -jar /caminho/completo/para/target/kairu-1.0.0.jar'
+```
 
-### Estrutura escolhida
+## 📌 Resumo Técnico
 
-- Existe uma **classe base de evento**
-- Ela contém:
-  - data
-  - hora
-- Todos os eventos concretos **herdam** essas informações
-
-Motivos:
-- Padronização
-- Menos repetição
-- Nenhum evento sem timestamp
-- Melhor suporte a métricas, gráficos e análises
-
----
-
-## 🙈 Eventos são cegos
-
-Eventos:
-- Não sabem quem os consome
-- Não sabem se alguém os consome
-- Não têm efeitos colaterais
-
-Isso garante:
-- Baixo acoplamento
-- UI intercambiável
-- Facilidade para mods
-- Testes simples
-
----
-
-## 🧩 Sistema de Mods (Visão Futura)
-
-Mods:
-- Não alteram regras do core
-- Não modificam comportamento existente
-- Apenas:
-  - escutam eventos
-  - reagem a eles
-  - adicionam funcionalidades paralelas
-
-A ideia é:
-- Core sólido e fechado
-- Extensão via eventos
-- Criatividade sem risco de quebrar o sistema
-
-Lua será usada futuramente como:
-- linguagem de extensão
-- não como base do sistema
-
----
-
-## 🧪 Testes como Prioridade
-
-Desde o início:
-
-- O core é projetado para ser testável
-- Decisões arquiteturais levam testes em conta
-- Tempo e eventos são controláveis
-
-Não é obrigatório TDD estrito, mas:
-> **Testabilidade influencia o design**
-
----
-
-## 📌 Resumo (TL;DR)
-
-- Core em Java puro
-- Arquitetura orientada a eventos
-- EventBus síncrono
-- Tempo abstraído via `Clock`
-- Eventos imutáveis com timestamp
-- Core independente de UI e mods
-- Extensão via mods, não via hack
-- Foco em clareza, previsibilidade e aprendizado
-
----
-
-## ▶️ Próximo Passo
-
-Com essa base definida, o próximo passo é criar as primeiras interfaces do core:
-
-- `Event`
-- `BaseEvent`
-- `Clock`
-- `EventBus`
-
-Esses contratos formam a fundação do KAIRu.
-
+- **Linguagem:** Java 17+ (Puro, focado em portabilidade).
+- **Concorrência:** Uso estratégico de `ScheduledExecutorService`.
+- **Comunicação:** Arquitetura Orientada a Eventos (EDA).
+- **Interface:** Terminal Interativo (ANSI Escape Codes).
