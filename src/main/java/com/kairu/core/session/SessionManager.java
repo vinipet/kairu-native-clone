@@ -19,7 +19,7 @@ public class SessionManager{
   private final  EventBus bus;
   private final Clock clock;
   private final TimerFactory factory;
-  public SessionRuntime currentRuntime;
+  private SessionRuntime currentRuntime;
   private UUID currentSessionId;
   private Timer timer;
 
@@ -90,5 +90,12 @@ public class SessionManager{
     currentSessionId = null;
     timer = null;
   }
+  
+  public SessionRuntime getCurrentRuntime() {
+    return currentRuntime; 
+  }
 
+  public Timer getTimer(){
+    return timer;
+  }
 }
