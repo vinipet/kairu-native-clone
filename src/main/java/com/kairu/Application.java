@@ -8,9 +8,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
-import com.kairu.core.bus.EventBus;
-import com.kairu.core.bus.SimpleEventBus;
-import com.kairu.core.event.SessionCompletedEvent;
+import com.kairu.core.Bootstrap.ApplicationContext;
+import com.kairu.core.Bootstrap.Bootstrap;
 import com.kairu.core.session.*;
 import com.kairu.core.time.*;
 
@@ -29,7 +28,7 @@ public class Application {
     private static final String BOLD = "\u001B[1m";
 
     private static SessionManager manager;
-    private static SessionRepository repository;
+    private static ApplicationContext context;
     private static ScheduledExecutorService scheduler;
     private static Scanner scanner = new Scanner(System.in);
     
@@ -39,13 +38,8 @@ public class Application {
     private static Instant messageExpiry = null;
 
     public static void main(String[] args) {
-        EventBus bus = new SimpleEventBus();
-        Clock clock = new RealClock();
-        TimerFactory factory = new TimerFactory(clock, bus);
-        manager = new SessionManager(bus, clock, factory);
-        repository = new InMemorySessionRepository();
-        
-        bus.subscribeListener(SessionCompletedEvent.class, new SessionCompletedPersistenceListener(repository));
+        context = Bootstrap.createContext();   
+        manager = context.getManager();
 
         showBanner();
         System.out.println("\n\n"); 
@@ -194,7 +188,7 @@ public class Application {
     }
 
     private static void listSessions() {
-        List<Session> sessions = repository.findAll();
+        List<Session> sessions = context.getSessionRepository().findAll();
         System.out.println(BOLD + "\n--- HISTÓRICO ---" + RESET);
         if (sessions.isEmpty()) System.out.println("Vazio.");
         else sessions.forEach(s -> System.out.printf(
