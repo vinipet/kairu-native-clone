@@ -79,8 +79,6 @@ public class SessionFlowTest{
     Timer timer = new sessionTimer(clock, bus,id1);
     SessionRepository repository = new InMemorySessionRepository();
     EventListener<SessionCompletedEvent> listener = new SessionCompletedPersistenceListener(repository); 
-    SessionRuntime sessionRuntime = new SessionRuntime(id1, bus, clock);
-
 
     bus.subscribeListener(SessionCompletedEvent.class, listener);
     bus.subscribeListener(TimerStartedEvent.class, runtime );
