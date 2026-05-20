@@ -7,18 +7,19 @@ import com.kairu.core.persistence.PersistencePaths;
 import com.kairu.core.session.SessionCompletedPersistenceListener;
 import com.kairu.core.session.SessionManager;
 import com.kairu.core.session.SessionRepository;
+import com.kairu.core.session.TagRepository;
 
 public class Bootstrap{
   
-  public static ApplicationContext createContext(){
+  public static ApplicationContext createfileContext(){
     EventBus bus = new SimpleEventBus();
-    SessionRepository repository =  PersistenceModule.initializeFilePersistence(PersistencePaths.sessionsFile());
+    SessionRepository repository =  PersistenceModule.initializeFileSessionPersistence(PersistencePaths.sessionsFile());
     SessionManager manager = CoreModule.createCore(bus);
-
+    TagRepository tagRepository = PersistenceModule.initializeFileTagPersistence(PersistencePaths.TagFile());
 
     bus.subscribeListener(SessionCompletedEvent.class, new SessionCompletedPersistenceListener(repository));
 
-    return new ApplicationContext(bus, repository, manager);
+    return new ApplicationContext(bus, repository, manager, tagRepository);
   }
 
 }
