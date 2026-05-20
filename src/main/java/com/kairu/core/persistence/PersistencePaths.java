@@ -15,5 +15,9 @@ public class PersistencePaths {
     public static Path sessionsFile() {
         return BASE_DIRECTORY.resolve("sessions.jsonl");
     }
+    
+    public static Path TagFile() {
+      return BASE_DIRECTORY.resolve("tags.json");
+    }
 
 }
