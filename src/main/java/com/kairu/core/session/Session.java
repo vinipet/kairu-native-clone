@@ -3,6 +3,7 @@ package com.kairu.core.session;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 import com.kairu.core.time.Interval;
@@ -46,5 +47,18 @@ public class Session {
 
   }
 
-  
+  @Override
+  public boolean equals(Object obj){
+    if(obj instanceof Session session){
+      if  (session.sessionId.equals(this.sessionId)){
+        return true;
+      }
+    }
+    return false;
+  }
+
+  @Override
+  public int hashCode(){
+    return Objects.hash(this.sessionId);
+  }
 }
