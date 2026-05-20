@@ -34,7 +34,6 @@ class ApplicationTest {
         bus.subscribeListener(SessionCompletedEvent.class, new SessionCompletedPersistenceListener(repository));
 
         setStaticField("manager", manager);
-        setStaticField("repository", repository);
         setStaticField("statusMessage", null);
     }
 
