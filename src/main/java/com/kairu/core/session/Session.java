@@ -13,6 +13,7 @@ public class Session {
   private final Instant startedAt;
   private final Instant endedAt;
   private final List<Interval> intervals;
+  private final Tag tag;
 
 
   public Duration getTotalDuration(){
@@ -33,8 +34,12 @@ public class Session {
       return intervals;
   }
 
+  public Tag getTag() {
+      return tag;
+  }
+
   public Session(UUID sessionId,
-               List<Interval> intervals) {
+               List<Interval> intervals, Tag tag) {
 
       if (intervals == null || intervals.isEmpty()) {
           throw new IllegalArgumentException("Session must have at least one interval");
@@ -44,6 +49,7 @@ public class Session {
       this.sessionId = sessionId;
       this.startedAt = intervals.getFirst().start;
       this.endedAt = intervals.getLast().end;
+      this.tag = tag;
 
   }
 

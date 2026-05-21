@@ -3,7 +3,7 @@ package com.kairu.core.session;
 import java.util.Objects;
 
 public class Tag {
-    private final String name;
+  private String name;
 
   public Tag(String name) {
     this.name = name.toLowerCase().trim();
