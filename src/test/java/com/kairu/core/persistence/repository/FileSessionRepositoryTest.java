@@ -8,6 +8,7 @@ import org.junit.jupiter.api.io.TempDir;
 import com.google.gson.Gson;
 import com.kairu.core.persistence.GsonFactory;
 import com.kairu.core.session.Session;
+import com.kairu.core.session.Tag;
 import com.kairu.core.time.Interval;
 
 import java.io.IOException;
@@ -38,7 +39,7 @@ class SessionRepositoryTest {
   void deveCriarArquivoEAdicionarSessaoComSucesso() throws IOException {
         List<Interval> intervals = new ArrayList<>();
         intervals.add(new Interval(Instant.now(), Instant.now().plusSeconds(600)));
-        Session session = new Session(UUID.randomUUID(), intervals);
+        Session session = new Session(UUID.randomUUID(), intervals, new Tag("test"));
 
         repository.save(session);
 
@@ -54,8 +55,8 @@ class SessionRepositoryTest {
     List<Interval> intervals = new ArrayList<>();
     intervals.add(new Interval(Instant.now(), Instant.now().plusSeconds(600)));
 
-    repository.save(new Session(UUID.randomUUID(), intervals));
-    repository.save(new Session(UUID.randomUUID(), intervals));
+    repository.save(new Session(UUID.randomUUID(), intervals,new Tag("test")));
+    repository.save(new Session(UUID.randomUUID(), intervals,new Tag("test")));
 
     List<String> linhas = Files.readAllLines(tempFile);
     assertEquals(2, linhas.size(), "O arquivo deveria ter 2 linhas (uma para cada sessão)");
@@ -67,7 +68,7 @@ class SessionRepositoryTest {
     intervals.add(new Interval(Instant.now(), Instant.now().plusSeconds(600)));
     UUID expectedId = UUID.randomUUID();
 
-    repository.save(new Session(expectedId, intervals));
+    repository.save(new Session(expectedId, intervals,new Tag("test")));
 
 
     List<Session> result = repository.findAll();
@@ -84,9 +85,9 @@ class SessionRepositoryTest {
     UUID expectedId2 = UUID.randomUUID();
     UUID expectedId3 = UUID.randomUUID();
 
-    repository.save(new Session(expectedId1, intervals));
-    repository.save(new Session(expectedId2, intervals));
-    repository.save(new Session(expectedId3, intervals));
+    repository.save(new Session(expectedId1, intervals, new Tag("test")));
+    repository.save(new Session(expectedId2, intervals,new Tag("test")));
+    repository.save(new Session(expectedId3, intervals,new Tag("test")));
 
     List<Session> result = repository.findAll();
 
@@ -100,8 +101,8 @@ class SessionRepositoryTest {
   @Test
   void findById_DeveRetornarSessao_QuandoOIdExistirNoArquivo() throws IOException {
     UUID idProcurado = UUID.randomUUID();
-    Session s1 = new Session(idProcurado, List.of(new Interval(Instant.now(), Instant.now().plusSeconds(10))));
-    Session s2 = new Session(UUID.randomUUID(), List.of(new Interval(Instant.now(), Instant.now().plusSeconds(20))));
+    Session s1 = new Session(idProcurado, List.of(new Interval(Instant.now(), Instant.now().plusSeconds(10))),new Tag("test"));
+    Session s2 = new Session(UUID.randomUUID(), List.of(new Interval(Instant.now(), Instant.now().plusSeconds(20))),new Tag("test"));
     
     repository.save(s1);
     repository.save(s2);
@@ -114,7 +115,7 @@ class SessionRepositoryTest {
 
   @Test
   void findById_DeveRetornarOptionalEmpty_QuandoOIdNaoExistirNoArquivo() throws IOException {
-    Session s1 = new Session(UUID.randomUUID(), List.of(new Interval(Instant.now(), Instant.now().plusSeconds(10))));
+    Session s1 = new Session(UUID.randomUUID(), List.of(new Interval(Instant.now(), Instant.now().plusSeconds(10))),new Tag("test"));
     repository.save(s1);
 
     Optional<Session> resultado = repository.findById(UUID.randomUUID()); // ID aleatório
@@ -140,9 +141,9 @@ class SessionRepositoryTest {
     @Test
     void findById_DeveRetornarSessaoCorreta_QuandoHouverMultiplosRegistros() throws IOException {
       UUID idAlvo = UUID.randomUUID();
-      repository.save(new Session(UUID.randomUUID(), List.of(new Interval(Instant.now(), Instant.now().plusSeconds(5)))));
-      repository.save(new Session(UUID.randomUUID(), List.of(new Interval(Instant.now(), Instant.now().plusSeconds(10)))));
-      repository.save(new Session(idAlvo, List.of(new Interval(Instant.now(), Instant.now().plusSeconds(15))))); // Alvo no meio
+      repository.save(new Session(UUID.randomUUID(), List.of(new Interval(Instant.now(), Instant.now().plusSeconds(5))),new Tag("test")));
+      repository.save(new Session(UUID.randomUUID(), List.of(new Interval(Instant.now(), Instant.now().plusSeconds(10))),new Tag("test")));
+      repository.save(new Session(idAlvo, List.of(new Interval(Instant.now(), Instant.now().plusSeconds(15))),new Tag("test"))); // Alvo no meio
 
       Optional<Session> resultado = repository.findById(idAlvo);
 

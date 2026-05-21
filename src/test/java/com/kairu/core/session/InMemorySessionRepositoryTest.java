@@ -24,7 +24,7 @@ public class  InMemorySessionRepositoryTest{
     Interval interval = new Interval(inst1, inst2);
     intervals.add(interval);
     UUID id = UUID.randomUUID();
-    Session session = new Session(id , intervals);
+    Session session = new Session(id , intervals,new Tag("teste"));
     InMemorySessionRepository sessionRepository = new InMemorySessionRepository();
 
     sessionRepository.save(session);
@@ -44,8 +44,8 @@ public class  InMemorySessionRepositoryTest{
     UUID id1 = UUID.randomUUID();
     UUID id2 = UUID.randomUUID();
 
-    Session session = new Session(id1, intervals);
-    Session session2 = new Session(id2, intervals);
+    Session session = new Session(id1, intervals,new Tag("teste"));
+    Session session2 = new Session(id2, intervals,new Tag("teste"));
     InMemorySessionRepository sessionRepository = new InMemorySessionRepository();
 
     sessionRepository.save(session);
@@ -66,7 +66,7 @@ public class  InMemorySessionRepositoryTest{
     InMemorySessionRepository sessionRepository = new InMemorySessionRepository();
     UUID id1 = UUID.randomUUID();
 
-    Session session = new Session(id1,intervals);
+    Session session = new Session(id1,intervals,new Tag("teste"));
     sessionRepository.save(session);
 
     assertEquals(session, sessionRepository.findById(id1).get());

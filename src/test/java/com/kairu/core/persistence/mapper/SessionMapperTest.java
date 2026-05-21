@@ -8,6 +8,7 @@ import org.junit.jupiter.api.Test;
 import com.kairu.core.persistence.dto.IntervalDTO;
 import com.kairu.core.persistence.dto.SessionDTO;
 import com.kairu.core.session.Session;
+import com.kairu.core.session.Tag;
 import com.kairu.core.time.Interval;
 
 import java.time.Instant;
@@ -21,16 +22,17 @@ class SessionMapperTest {
   Session session;
   Instant start;
   Instant end;
-
+  Tag tag;
 
   @BeforeEach
   void setup(){
     this.idEsperado = UUID.randomUUID();
     this.start = Instant.now();
     this.end = start.plusSeconds(3600); // 1 hora depois
+    this.tag = new Tag("test");
     List<Interval> intervals = new ArrayList<>();
     intervals.add(new Interval(start, end));
-    this.session = new Session(idEsperado, intervals);
+    this.session = new Session(idEsperado, intervals, tag);
     
 
   }  
@@ -52,7 +54,7 @@ class SessionMapperTest {
     List<IntervalDTO> intervalDTOs = new ArrayList<>();
     intervalDTOs.add(new IntervalDTO(start, end));
     
-    SessionDTO dto = new SessionDTO(idEsperado, intervalDTOs);
+    SessionDTO dto = new SessionDTO(idEsperado, intervalDTOs, tag);
 
     Session sessionConvertida = SessionMapper.toEntity(dto);
 
