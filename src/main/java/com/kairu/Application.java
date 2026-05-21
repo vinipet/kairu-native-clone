@@ -3,7 +3,9 @@ package com.kairu;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -38,14 +40,14 @@ public class Application {
     private static Instant messageExpiry = null;
 
     public static void main(String[] args) {
-        context = Bootstrap.createContext();   
+        context = Bootstrap.createFileContext(new RealClock());   
         manager = context.getManager();
-
+        
         showBanner();
         System.out.println("\n\n"); 
-
+            
         while (true) {
-            System.out.print(BOLD + CYAN + "kairu > " + RESET);
+            System.out.print(BOLD + CYAN + "kairu "+ getPromptTagSuffix() + "> " + RESET);
             if (!scanner.hasNextLine()) break;
             String input = scanner.nextLine().toLowerCase().trim();
 
@@ -55,14 +57,16 @@ public class Application {
             }
 
             switch (input) {
-                case "start"  -> safeRun(Application::startSession);
-                case "pause"  -> safeRun(Application::pauseSession);
-                case "resume" -> safeRun(Application::resumeSession);
-                case "stop"   -> safeRun(Application::stopSession);
-                case "list"   -> safeRun(Application::listSessions);
-                case "help"   -> safeRun(Application::showHelp);
-                case ""       -> {}
-                default       -> setStatusMessage(YELLOW + "Comando desconhecido." + RESET, 3);
+                case "start"      -> safeRun(Application::startSession);
+                case "pause"      -> safeRun(Application::pauseSession);
+                case "resume"     -> safeRun(Application::resumeSession);
+                case "stop"       -> safeRun(Application::stopSession);
+                case "list"       -> safeRun(Application::listSessions);
+                case "help"       -> safeRun(Application::showHelp);
+                case "create tag"  -> safeRun(Application::createTag);
+                case "list tag"    -> safeRun(Application::listTags);
+                case ""           -> {}
+                default           -> setStatusMessage(YELLOW + "Comando desconhecido." + RESET, 3);
             }
         }
         
@@ -72,8 +76,12 @@ public class Application {
     }
 
     private static void setStatusMessage(String message, int seconds) {
+      if (manager.getCurrentRuntime() != null) {
         statusMessage = message;
         messageExpiry = Instant.now().plusSeconds(seconds);
+      } else {
+        System.out.println(message);
+      }    
     }
 
     private static boolean confirmExit() {
@@ -99,8 +107,20 @@ public class Application {
           setStatusMessage(RED + "Erro: Sessão ja iniciada." + RESET, 5);
           return;
         }
-        manager.startSession();
-        startLiveTimer();
+
+        System.out.print(RED + BOLD + "Digite a tag da sessão:" + RESET);
+        listTags();
+        String choice = scanner.nextLine().toLowerCase().trim();
+        
+        Optional<Tag> tagEncontrada = context.getTagRepository().findByName(choice);
+
+        if (tagEncontrada.isPresent()) {
+          System.out.print(MOVE_UP + "\r" + ERASE_LINE); // Limpa a pergunta
+          manager.startSession(tagEncontrada.get());
+          startLiveTimer();
+        } else {
+          setStatusMessage("Digite uma tag válida, ou crie uma nova tag", 5);
+        }
     }
 
     private static void pauseSession() {
@@ -187,22 +207,23 @@ public class Application {
         System.out.flush();
     }
 
-    private static void listSessions() {
-        List<Session> sessions = context.getSessionRepository().findAll();
-        System.out.println(BOLD + "\n--- HISTÓRICO ---" + RESET);
-        if (sessions.isEmpty()) System.out.println("Vazio.");
-        else sessions.forEach(s -> System.out.printf(
-                                                    "%s | %d min | %d intervalos%n",
-                                                    s.getStartedAt(),
-                                                    s.getTotalDuration().toMinutes(),
-                                                    s.getIntervals().size()
-        ));
-        System.out.println();
-    }
+  private static void listSessions() {
+    List<Session> sessions = context.getSessionRepository().findAll();
+    System.out.println(BOLD + "\n--- HISTÓRICO ---" + RESET);
+    if (sessions.isEmpty()) System.out.println("Vazio.");
+    else sessions.forEach(s -> System.out.printf(
+                         "[%s] | %s | %d min | %d intervalos%n",
+                         s.getTag() != null ? s.getTag().getName() : "Sem Tag",  
+                         s.getStartedAt(),                                                             
+                         s.getTotalDuration().toMinutes(),                      
+                         s.getIntervals().size()
+    ));
+    System.out.println();
+  }
 
-    private static void showBanner() {
-        System.out.println(BOLD + BLUE + "=== KAIRU PRODUCTIVITY TIMER ===" + RESET);
-    }
+  private static void showBanner() {
+    System.out.println(BOLD + BLUE + "=== KAIRU PRODUCTIVITY TIMER ===" + RESET);
+  }
 
   private static void showHelp() {
     System.out.println(CYAN + BOLD + "\nComandos disponíveis:" + RESET);
@@ -225,5 +246,43 @@ public class Application {
     }catch(Exception e){
       setStatusMessage(RED + "Erro: " + e.getMessage() + RESET, 5);
     }
+  }
+  
+  private static void createTag(){
+    if (context.getManager().getCurrentRuntime() == null) {
+      System.out.print(RED + BOLD + "Escolha o nome da Tag: " + RESET);
+      String choice = scanner.nextLine();
+      if (choice == null || choice.isBlank()) {
+        setStatusMessage(RED + "Erro: O nome da tag não pode ser vazio!" + RESET, 4);
+        return; // Corta a execução aqui para não salvar no repositório
+      }
+
+
+      Tag tag = new Tag(choice);
+      context.getTagRepository().save(tag);
+        
+      System.out.println(GREEN + "✔ Tag '" + choice + "' criada com sucesso!" + RESET + "\n");
+    } else {
+      setStatusMessage(RED + "Vai estudar, FOCO!!!" + RESET, 5);
+    }
+  }
+
+  private static void listTags(){
+    Set<Tag> tags = context.getTagRepository().findAll();
+    System.out.println(BOLD + "\n--- TAGS ---" + RESET);
+    if (tags.isEmpty()){
+      System.out.println("Vazio");
+    } else {
+      tags.forEach(s -> System.out.printf("- %s%n", s.getName()));
+    }
+  }
+
+  private static String getPromptTagSuffix() {
+    var runtime = manager.getCurrentRuntime();
+    
+    if (runtime == null || manager.getCurrentTag() == null) {
+        return "";
+    }
+    return " " + YELLOW + "[" + manager.getCurrentTag().getName() + "]" + CYAN;
   }
 }
