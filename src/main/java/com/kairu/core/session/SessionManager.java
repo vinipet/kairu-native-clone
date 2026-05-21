@@ -100,4 +100,8 @@ public class SessionManager{
   public Timer getTimer(){
     return timer;
   }
+
+  public Tag getCurrentTag() {
+      return currentTag;
+  }
 }
