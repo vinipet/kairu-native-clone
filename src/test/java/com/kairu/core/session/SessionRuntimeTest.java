@@ -19,13 +19,15 @@ public class SessionRuntimeTest{
   private ManualClock clock;
   private SessionRuntime runtime;
   private UUID id1;
+  private Tag tag;
 
   @BeforeEach
   void setup(){
     this.bus = new SimpleEventBus();
     this.clock = new ManualClock(Instant.now());
     this.id1 = UUID.randomUUID();
-    this.runtime = new SessionRuntime(id1, bus, clock);
+    this.tag = new Tag("test");
+    this.runtime = new SessionRuntime(id1, bus, clock,tag);
   }
   private void startSession(UUID id) {
     runtime.onEvent(new TimerStartedEvent(clock.now(),id));

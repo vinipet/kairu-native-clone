@@ -20,6 +20,7 @@ import com.kairu.core.session.Session;
 import com.kairu.core.session.SessionCompletedPersistenceListener;
 import com.kairu.core.session.SessionRepository;
 import com.kairu.core.session.SessionRuntime;
+import com.kairu.core.session.Tag;
 import com.kairu.core.time.ManualClock;
 import com.kairu.core.time.Timer;
 import com.kairu.core.time.sessionTimer;
@@ -31,13 +32,15 @@ public class SessionFlowTest{
     private ManualClock clock;
     private SessionRuntime runtime;
     private UUID id1;  
+    private Tag tag;
 
   @BeforeEach
   void setup() {
     bus = new SimpleEventBus();
     clock = new ManualClock(Instant.now());
     id1 = UUID.randomUUID();
-    runtime = new SessionRuntime(id1, bus, clock);
+    tag = new Tag("test");
+    runtime = new SessionRuntime(id1, bus, clock, tag);
   } 
 
   private void startSession() {

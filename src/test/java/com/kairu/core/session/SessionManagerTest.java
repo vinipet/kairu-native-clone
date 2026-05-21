@@ -21,6 +21,7 @@ public class SessionManagerTest {
     private ManualClock clock;
     private TimerFactory factory;
     private SessionManager manager;
+    private Tag tag;
 
     @BeforeEach
     void setup() {
@@ -28,24 +29,25 @@ public class SessionManagerTest {
         clock = new ManualClock(Instant.now());
         factory = new TimerFactory(clock, bus);
         manager = new SessionManager(bus, clock, factory);
+        tag = new Tag("test");
     }
 
     @Test
     void shouldCleanUpBusAfterStoppingSession() {
-        manager.startSession();
+        manager.startSession(tag);
         clock.advanceSeconds(1000);
         
         assertEquals(StopResult.SUCCESS,manager.stopSession()) ;
 
-        assertDoesNotThrow(() -> manager.startSession(), "Deveria ser possível iniciar nova sessão após o stop");
+        assertDoesNotThrow(() -> manager.startSession(tag), "Deveria ser possível iniciar nova sessão após o stop");
     }
 
     @Test
     void shouldThrowExceptionWhenStartingTwoSessions() {
-        manager.startSession();
+        manager.startSession(tag);
         
         Exception exception = assertThrows(IllegalStateException.class, () -> {
-            manager.startSession();
+            manager.startSession(tag);
         });
 
         assertEquals("there is already an active session", exception.getMessage());
@@ -59,7 +61,7 @@ public class SessionManagerTest {
         bus.subscribeListener(TimerStartedEvent.class, startEventRef::set);
         bus.subscribeListener(TimerStoppedEvent.class, stopEventRef::set);
 
-        manager.startSession();
+        manager.startSession(tag);
         assertNotNull(startEventRef.get(), "O evento de TimerStarted deveria ter sido publicado");
 
         clock.advanceSeconds(1000);

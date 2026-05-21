@@ -1,12 +1,9 @@
 package com.kairu;
 
-import com.kairu.core.bus.EventBus;
-import com.kairu.core.bus.SimpleEventBus;
-import com.kairu.core.event.SessionCompletedEvent;
-import com.kairu.core.session.InMemorySessionRepository;
-import com.kairu.core.session.SessionCompletedPersistenceListener;
+import com.kairu.core.Bootstrap.ApplicationContext;
+import com.kairu.core.Bootstrap.Bootstrap;
 import com.kairu.core.session.SessionManager;
-import com.kairu.core.time.TimerFactory;
+import com.kairu.core.session.Tag;
 import com.kairu.core.time.ManualClock;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -21,25 +18,23 @@ class ApplicationTest {
 
     private ManualClock clock;
     private SessionManager manager;
-    private InMemorySessionRepository repository;
-
+    private ApplicationContext context;
     @BeforeEach
     void setup() throws Exception {
         clock = new ManualClock(Instant.now());
-        EventBus bus = new SimpleEventBus();
-        TimerFactory factory = new TimerFactory(clock, bus);
+        context = Bootstrap.createInMemoryContext(clock);
+        manager = context.getManager();  
         
-        manager = new SessionManager(bus, clock, factory);
-        repository = new InMemorySessionRepository();
-        bus.subscribeListener(SessionCompletedEvent.class, new SessionCompletedPersistenceListener(repository));
-
+        context.getTagRepository().save(new Tag("teste"));
+      
         setStaticField("manager", manager);
         setStaticField("statusMessage", null);
+        setStaticField("context", context);
     }
 
     @Test
     void testFluxoCompleto_Start_Pause_Resume_Stop() throws Exception {
-        invokePrivateMethod("startSession");
+        darStartComTag("teste");
         assertNotNull(manager.getCurrentRuntime(), "Sessão deveria ter iniciado");
         
         clock.advanceSeconds(600); 
@@ -54,13 +49,13 @@ class ApplicationTest {
         clock.advanceSeconds(300); // Mais 5 minutos
 
         invokePrivateMethod("stopSession");
-        assertEquals(1, repository.findAll().size(), "Deveria ter salvo uma sessão");
-        assertEquals(15, repository.findAll().get(0).getTotalDuration().toMinutes());
+        assertEquals(1, context.getSessionRepository().findAll().size(), "Deveria ter salvo uma sessão");
+        assertEquals(15, context.getSessionRepository().findAll().get(0).getTotalDuration().toMinutes());
     }
 
     @Test
     void testStopSessaoCurta_DevePerguntarEResponderSim() throws Exception {
-      invokePrivateMethod("startSession");
+      darStartComTag("teste");
       clock.advanceSeconds(60); // 1 minuto
      
       // 1. Preparamos a resposta "s" (sim, descartar) seguida de um Enter (\n)
@@ -75,7 +70,7 @@ class ApplicationTest {
       
       // 4. Verificações
       assertNull(manager.getCurrentRuntime(), "A sessão deveria ter sido encerrada após o 's'");
-      assertEquals(0, repository.findAll().size(), "Não deveria ter salvo nada no repo");
+      assertEquals(0, context.getSessionRepository().findAll().size(), "Não deveria ter salvo nada no repo");
       
       // 5. Limpeza: Volta o System.in para o original para não quebrar outros testes
       System.setIn(System.in);
@@ -89,10 +84,10 @@ class ApplicationTest {
 
     @Test
     void testNaoDeveReiniciarSessaoSeJaEstiverRodando() throws Exception {
-      invokePrivateMethod("startSession");
+      darStartComTag("teste");
       clock.advanceSeconds(600); // 10 min
       
-      invokePrivateMethod("startSession");
+      darStartComTag("teste");
 
       assertEquals(10, manager.getCurrentRuntime().getDuration().toMinutes(), 
         "O tempo não deveria ter sido resetado por um novo start");
@@ -101,24 +96,24 @@ class ApplicationTest {
     @Test
     void testDeveAcumularVariasSessoesNoHistorico() throws Exception {
       // Sessão 1 (10 min)
-      invokePrivateMethod("startSession");
+      darStartComTag("teste");
       clock.advanceSeconds(600);
       invokePrivateMethod("stopSession");
 
       // Sessão 2 (20 min)
-      invokePrivateMethod("startSession");
+      darStartComTag("teste");
       clock.advanceSeconds(1200);
       invokePrivateMethod("stopSession");
 
-      assertEquals(2, repository.findAll().size(), "Deveria ter 2 sessões no histórico");
+      assertEquals(2, context.getSessionRepository().findAll().size(), "Deveria ter 2 sessões no histórico");
     }
 
     @Test
     void testBugRelogioAcelerado_VariosStartsNaoDevemCriarMultiplosSchedulers() throws Exception {
       // 1. Simula o usuário dando 'start' várias vezes seguidas
-      invokePrivateMethod("startSession");
-      invokePrivateMethod("startSession");
-      invokePrivateMethod("startSession");
+      darStartComTag("teste");
+      darStartComTag("teste");
+      darStartComTag("teste");
       // 2. Pegamos o scheduler via Reflection para ver se ele está saudável
       ScheduledExecutorService s = (ScheduledExecutorService) getStaticField("scheduler");
       assertFalse(s.isShutdown(), "O scheduler deveria estar ativo");
@@ -132,7 +127,7 @@ class ApplicationTest {
     @Test
     void testStartDuplo_NaoDeveReiniciarScheduler() throws Exception {
       // Primeiro start
-      invokePrivateMethod("startSession");
+      darStartComTag("teste");
       Object schedulerOriginal = getStaticField("scheduler");
       assertNotNull(schedulerOriginal);
 
@@ -168,7 +163,7 @@ class ApplicationTest {
     @Test
     void testAlinhamentoRelogio_NaoDeveResetarStartTimeIndevidamente() throws Exception {
       // 1. Inicia
-      invokePrivateMethod("startSession");
+      darStartComTag("teste");
       Instant primeiroStart = manager.getCurrentRuntime().getCurrentStart();
       
       clock.advanceSeconds(100);
@@ -187,6 +182,17 @@ class ApplicationTest {
         Field field = Application.class.getDeclaredField(fieldName);
         field.setAccessible(true);
         field.set(null, value);
+    }
+
+    private void darStartComTag(String nomeTag) throws Exception {
+        String input = nomeTag + "\n";
+        System.setIn(new java.io.ByteArrayInputStream(input.getBytes()));
+        setStaticField("scanner", new java.util.Scanner(System.in));
+        invokePrivateMethod("startSession");
+        
+        // Limpa o System.in para o estado padrão após o start
+        System.setIn(System.in);
+        setStaticField("scanner", new java.util.Scanner(System.in));
     }
 
     private Object getStaticField(String fieldName) throws Exception {
