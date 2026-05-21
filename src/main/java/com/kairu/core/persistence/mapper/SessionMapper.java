@@ -1,6 +1,7 @@
 package com.kairu.core.persistence.mapper;
 
 import com.kairu.core.session.Session;
+import com.kairu.core.session.Tag;
 import com.kairu.core.time.Interval;
 import com.kairu.core.persistence.dto.SessionDTO;
 import com.kairu.core.persistence.dto.IntervalDTO;
@@ -22,7 +23,8 @@ public class SessionMapper {
 
     return new SessionDTO(
       session.sessionId,
-      intervals
+      intervals,
+      session.getTag()
     );
   }
 
@@ -32,7 +34,7 @@ public class SessionMapper {
         .toList();
 
     // Cria a entidade usando os dados do DTO
-    Session session = new Session(dto.getId(), intervals);
+    Session session = new Session(dto.getId(), intervals,new Tag(dto.getTag()));
     
     return session;
   }

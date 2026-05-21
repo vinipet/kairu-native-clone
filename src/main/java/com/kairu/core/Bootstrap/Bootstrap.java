@@ -11,7 +11,7 @@ import com.kairu.core.session.TagRepository;
 
 public class Bootstrap{
   
-  public static ApplicationContext createfileContext(){
+  public static ApplicationContext createFileContext(){
     EventBus bus = new SimpleEventBus();
     SessionRepository repository =  PersistenceModule.initializeFileSessionPersistence(PersistencePaths.sessionsFile());
     SessionManager manager = CoreModule.createCore(bus);
