@@ -22,4 +22,15 @@ public class Bootstrap{
     return new ApplicationContext(bus, repository, manager, tagRepository);
   }
 
+
+  public static ApplicationContext createInMemoryContext(){
+    EventBus bus = new SimpleEventBus();
+    SessionRepository repository =  PersistenceModule.initializeInMemorySessionPercistence();
+    SessionManager manager = CoreModule.createCore(bus);
+    TagRepository tagRepository = PersistenceModule.initializeInMemoryTagPersistence();
+
+    bus.subscribeListener(SessionCompletedEvent.class, new SessionCompletedPersistenceListener(repository));
+
+    return new ApplicationContext(bus, repository, manager, tagRepository);
+  }
 }
