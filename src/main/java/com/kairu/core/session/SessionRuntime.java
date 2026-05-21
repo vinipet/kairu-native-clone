@@ -18,7 +18,7 @@ public class SessionRuntime implements EventListener<Event>{
   
   private final Map<Class<? extends Event>, Consumer<Event>> handlers = new HashMap<>();
   private UUID sessionId;
-  private Tag currentTag;
+  private Tag tag;
   private Instant currentStart;
   private List<Interval> intervals = new ArrayList<>();
   private State state = State.IDLE;
@@ -41,10 +41,11 @@ public class SessionRuntime implements EventListener<Event>{
     return passDuration;
   }
 
-  public SessionRuntime(UUID sessionIdParam, EventBus bus, Clock clock){
+  public SessionRuntime(UUID sessionIdParam, EventBus bus, Clock clock, Tag tag){
     this.sessionId = sessionIdParam;
     this.bus = bus;
     this.clock = clock;
+    this.tag = tag;
 
     handlers.put(TimerStartedEvent.class, e -> this.handleStart((TimerStartedEvent) e));
     handlers.put(TimerStoppedEvent.class, e -> this.handleStop((TimerStoppedEvent) e));
@@ -95,7 +96,6 @@ public class SessionRuntime implements EventListener<Event>{
 
     currentStart = null;
     state = State.STOPPED;
-    currentTag = null;
     Session session = finishSession();
     bus.publishEvent(new SessionCompletedEvent(clock.now(), sessionId ,session));
 
@@ -122,7 +122,7 @@ public class SessionRuntime implements EventListener<Event>{
   }
 
   public Session finishSession(){
-    Session session = new Session(sessionId, intervals, currentTag);
+    Session session = new Session(sessionId, intervals, tag);
     return session;
   }
 

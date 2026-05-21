@@ -21,6 +21,7 @@ public class SessionManager{
   private final TimerFactory factory;
   private SessionRuntime currentRuntime;
   private UUID currentSessionId;
+  private Tag currentTag;
   private Timer timer;
 
   public SessionManager(EventBus bus, Clock clock, TimerFactory factory){
@@ -31,13 +32,14 @@ public class SessionManager{
 
   }
 
-  public void startSession(){
+  public void startSession(Tag tag){
     if(currentRuntime != null){
       throw new IllegalStateException("there is already an active session");
     }
-
+    
+    currentTag = tag;
     currentSessionId = UUID.randomUUID();
-    currentRuntime = new SessionRuntime(currentSessionId, bus, clock);
+    currentRuntime = new SessionRuntime(currentSessionId, bus, clock, currentTag);
     bus.subscribeListener(TimerStartedEvent.class, currentRuntime);
     bus.subscribeListener(TimerPausedEvent.class, currentRuntime);
     bus.subscribeListener(TimerResumeEvent.class, currentRuntime);
