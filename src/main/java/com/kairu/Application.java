@@ -12,6 +12,7 @@ import java.util.concurrent.TimeUnit;
 
 import com.kairu.core.Bootstrap.ApplicationContext;
 import com.kairu.core.Bootstrap.Bootstrap;
+import com.kairu.core.Statistics.StatisticsService;
 import com.kairu.core.session.*;
 import com.kairu.core.time.*;
 
@@ -61,10 +62,10 @@ public class Application {
                 case "pause"      -> safeRun(Application::pauseSession);
                 case "resume"     -> safeRun(Application::resumeSession);
                 case "stop"       -> safeRun(Application::stopSession);
-                case "list"       -> safeRun(Application::listSessions);
+                case "analytics"  -> safeRun(Application::showAnalyticsMenu);
                 case "help"       -> safeRun(Application::showHelp);
-                case "create tag"  -> safeRun(Application::createTag);
-                case "list tag"    -> safeRun(Application::listTags);
+                case "create tag" -> safeRun(Application::createTag);
+                case "list tag"   -> safeRun(Application::listTags);
                 case ""           -> {}
                 default           -> setStatusMessage(YELLOW + "Comando desconhecido." + RESET, 3);
             }
@@ -284,5 +285,84 @@ public class Application {
         return "";
     }
     return " " + YELLOW + "[" + manager.getCurrentTag().getName() + "]" + CYAN;
+  }
+
+  private static void showAnalyticsMenu() {
+    System.out.println("\n" + BOLD + BLUE + "=== KAIRU ANALYTICS ===" + RESET);
+    System.out.println("1. All Tags Summary");
+    System.out.println("2. Specific Tag Stats");
+    System.out.println("3. Specific Date Stats");
+    System.out.println("4. Recent Days Evolution");
+    System.out.println("5. Current Week Report");
+    System.out.println("6. show older list viewer");
+    System.out.println("7. Back to Main Menu");
+    System.out.print(BOLD + CYAN + "analytics > " + RESET);
+
+    String choice = scanner.nextLine().trim();
+
+    switch (choice) {
+        case "1" -> {
+            var stats = context.getAnalytics().getAllTagsStats();
+            printMetricList("All Tags", stats);
+        }
+        case "2" -> {
+            System.out.print(BOLD + "Enter Tag Name: " + RESET);
+            String tagName = scanner.nextLine().trim();
+            var stat = context.getAnalytics().getStatsForTag(tagName);
+            printSingleMetric(stat);
+        }
+        case "3" -> {
+            System.out.print(BOLD + "Enter Date (YYYY-MM-DD): " + RESET);
+            String dateInput = scanner.nextLine().trim();
+            try {
+                java.time.LocalDate date = java.time.LocalDate.parse(dateInput);
+                var stat = context.getAnalytics().getStatsForDate(date);
+                printSingleMetric(stat);
+            } catch (java.time.format.DateTimeParseException e) {
+                setStatusMessage(RED + "Invalid date format! Use YYYY-MM-DD" + RESET, 4);
+            }
+        }
+        case "4" -> {
+            System.out.print(BOLD + "How many days back?: " + RESET);
+            try {
+                int days = Integer.parseInt(scanner.nextLine().trim());
+                var stats = context.getAnalytics().getRecentDaysStats(days);
+                printMetricList("Recent Days Evolution", stats);
+            } catch (NumberFormatException e) {
+                setStatusMessage(RED + "Invalid number of days!" + RESET, 4);
+            }
+        }
+        case "5" -> {
+            var stats = context.getAnalytics().getCurrentWeekStats();
+            printMetricList("Current Week Report", stats);
+        }
+        case "6" ->{
+          safeRun(Application::listSessions);
+        }
+        case "7" -> {
+            // Just exits the method and goes back to the main loop
+        }
+        default -> setStatusMessage(RED + "Unknown analytics option!" + RESET, 4);
+    }
+  }
+
+  private static void printMetricList(String title, List<StatisticsService.MetricResult> stats) {
+    System.out.println("\n" + BOLD + GREEN + "--- " + title + " ---" + RESET);
+    if (stats.isEmpty()) {
+        System.out.println("No data found for this period.");
+        return;
+    }
+    System.out.printf(BOLD + "%-20s | %-12s | %-10s%n" + RESET, "Group/Key", "Total Time", "Sessions");
+    System.out.println("-----------------------------------------------------");
+    stats.forEach(stat -> System.out.printf("%-20s | %-10d min | %-10d%n", 
+            stat.groupKey(), stat.totalMinutes(), stat.sessionCount()));
+    System.out.println();
+  }
+
+  private static void printSingleMetric( StatisticsService.MetricResult stat) {
+    System.out.println("\n" + BOLD + GREEN + "--- Result ---" + RESET);
+    System.out.printf(BOLD + "Target: " + RESET + "%s%n", stat.groupKey());
+    System.out.printf(BOLD + "Total Time: " + RESET + "%d min%n", stat.totalMinutes());
+    System.out.printf(BOLD + "Sessions: " + RESET + "%d%n%n", stat.sessionCount());
   }
 }
