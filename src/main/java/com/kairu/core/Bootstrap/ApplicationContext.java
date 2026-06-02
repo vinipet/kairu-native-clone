@@ -1,5 +1,6 @@
 package com.kairu.core.Bootstrap;
 
+import com.kairu.core.Statistics.SessionStatsService;
 import com.kairu.core.bus.EventBus;
 import com.kairu.core.session.SessionManager;
 import com.kairu.core.session.SessionRepository;
@@ -11,13 +12,15 @@ public class ApplicationContext{
   private SessionRepository sessionRepository;
   private SessionManager manager;
   private TagRepository tagRepository;
+  private SessionStatsService analytics;
   
 
-  public ApplicationContext(EventBus bus, SessionRepository repository, SessionManager manager, TagRepository tagRepository){
+  public ApplicationContext(EventBus bus, SessionRepository repository, SessionManager manager, TagRepository tagRepository, SessionStatsService analytics){
     this.manager = manager;
     this.bus = bus;
     this.sessionRepository = repository;
     this.tagRepository = tagRepository;
+    this.analytics = analytics;
   }
 
   public EventBus getBus() {
@@ -34,5 +37,9 @@ public class ApplicationContext{
 
   public TagRepository getTagRepository() {
       return tagRepository;
+  }
+
+  public SessionStatsService getAnalytics() {
+      return analytics;
   }
 }

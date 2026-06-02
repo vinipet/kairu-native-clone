@@ -1,6 +1,7 @@
 package com.kairu.core.Bootstrap;
 
 
+import com.kairu.core.Statistics.SessionStatsService;
 import com.kairu.core.bus.EventBus;
 import com.kairu.core.bus.SimpleEventBus;
 import com.kairu.core.event.SessionCompletedEvent;
@@ -18,10 +19,11 @@ public class Bootstrap{
     SessionRepository repository =  PersistenceModule.initializeFileSessionPersistence(PersistencePaths.sessionsFile());
     SessionManager manager = CoreModule.createCore(bus, clock);
     TagRepository tagRepository = PersistenceModule.initializeFileTagPersistence(PersistencePaths.TagFile());
+    SessionStatsService analytics = new SessionStatsService(repository);
 
     bus.subscribeListener(SessionCompletedEvent.class, new SessionCompletedPersistenceListener(repository));
 
-    return new ApplicationContext(bus, repository, manager, tagRepository);
+    return new ApplicationContext(bus, repository, manager, tagRepository, analytics);
   }
 
 
@@ -30,9 +32,10 @@ public class Bootstrap{
     SessionRepository repository =  PersistenceModule.initializeInMemorySessionPercistence();
     SessionManager manager = CoreModule.createCore(bus, clock);
     TagRepository tagRepository = PersistenceModule.initializeInMemoryTagPersistence();
+    SessionStatsService analytics = new SessionStatsService(repository);
 
     bus.subscribeListener(SessionCompletedEvent.class, new SessionCompletedPersistenceListener(repository));
 
-    return new ApplicationContext(bus, repository, manager, tagRepository);
+    return new ApplicationContext(bus, repository, manager, tagRepository, analytics);
   }
 }
