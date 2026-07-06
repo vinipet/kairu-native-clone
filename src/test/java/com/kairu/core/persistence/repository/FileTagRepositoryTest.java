@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+
 import com.google.gson.Gson;
 import com.kairu.core.session.Tag;
 
@@ -52,15 +53,21 @@ class FileTagRepositoryTest {
     }
 
     @Test
-    void save_NaoDeveDuplicarTag_QuandoAdicionarMesmoObjetoOuIdIgual() {
-        // (Assumindo que sua classe Tag tenha equals/hashCode por ID ou Nome)
-        Tag tag = new Tag("Projetos");
-
-        repository.save(tag);
-        repository.save(tag); // Tentativa de duplicar
+    void save_NaoDeveDuplicarTag_QuandoAdicionarMesmoNome() {
+        repository.save(new Tag("Projetos"));
+        repository.save(new Tag("Projetos"));
 
         Set<Tag> tags = repository.findAll();
         assertEquals(1, tags.size(), "O Set não deveria permitir tags duplicadas em disco");
+    }
+
+    @Test
+    void save_DeveIgnorarCaseEDuplicar_QuandoNomesDiferentesApenasPorCaso() {
+        repository.save(new Tag("Urgente"));
+        repository.save(new Tag("urgente"));
+
+        Set<Tag> tags = repository.findAll();
+        assertEquals(1, tags.size(), "Tags com mesmo nome ignorando case devem ser tratadas como iguais");
     }
 
     // --- TESTES DO MÉTODO findAll() ---
@@ -68,14 +75,14 @@ class FileTagRepositoryTest {
     @Test
     void findAll_DeveRetornarSetVazio_QuandoArquivoNaoExistir() {
         Set<Tag> tags = repository.findAll();
-        
+
         assertNotNull(tags);
         assertTrue(tags.isEmpty());
     }
 
     @Test
-    void findAll_DeveRetornarSetVazio_QuandoArquivoEstiverZerado() throws IOException {
-        Files.createFile(tempFile); // Cria arquivo com 0 bytes
+    void findAll_DeveRetornarSetVazio_QuandoArquivoEstiverVazio() throws IOException {
+        Files.createFile(tempFile);
 
         Set<Tag> tags = repository.findAll();
 
@@ -93,6 +100,7 @@ class FileTagRepositoryTest {
         assertEquals(3, tags.size());
     }
 
+    // --- TESTES DO MÉTODO findByName() ---
 
     @Test
     void findByName_DeveRetornarTag_QuandoONomeExistirExatamenteIgual() {
@@ -105,11 +113,10 @@ class FileTagRepositoryTest {
     }
 
     @Test
-    void findByName_DeveRetornarTag_Ignore_Case() {
+    void findByName_DeveRetornarTag_IgnorandoCase() {
         repository.save(new Tag("Finanças"));
 
-        // Busca com letras minúsculas
-        Optional<Tag> resultado = repository.findByName("finanças");
+        Optional<Tag> resultado = repository.findByName("FINANÇAS");
 
         assertTrue(resultado.isPresent());
         assertEquals("finanças", resultado.get().getName());
@@ -126,8 +133,17 @@ class FileTagRepositoryTest {
 
     @Test
     void findByName_DeveRetornarOptionalEmpty_QuandoArquivoEstiverVazio() {
-        // Busca sem antes ter salvo nada
         Optional<Tag> resultado = repository.findByName("QualquerCoisa");
+
+        assertTrue(resultado.isEmpty());
+    }
+
+    @Test
+    void findByName_DeveRetornarOptionalEmpty_QuandoArquivoNaoExistir() {
+        Path tempFile2 = tempDir.resolve("inexistente.json");
+        FileTagRepository repositorioSemArquivo = new FileTagRepository(tempFile2, gson);
+
+        Optional<Tag> resultado = repositorioSemArquivo.findByName("teste");
 
         assertTrue(resultado.isEmpty());
     }
