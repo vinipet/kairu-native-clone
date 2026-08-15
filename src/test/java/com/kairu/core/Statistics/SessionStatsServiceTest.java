@@ -11,7 +11,6 @@ import com.kairu.core.time.Interval;
 import com.kairu.core.Statistics.StatisticsService.MetricResult;
 
 import java.time.DayOfWeek;
-import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
