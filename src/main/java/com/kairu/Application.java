@@ -2,19 +2,19 @@ package com.kairu;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
-import java.util.Optional;
 import java.util.Scanner;
-import java.util.Set;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 
 import com.kairu.core.Bootstrap.ApplicationContext;
 import com.kairu.core.Bootstrap.Bootstrap;
-import com.kairu.core.Statistics.StatisticsService;
-import com.kairu.core.session.*;
-import com.kairu.core.time.*;
+import com.kairu.core.Bootstrap.CommandBootstrap;
+import com.kairu.core.commands.CommandResult;
+import com.kairu.core.commands.Dispatcher;
+import com.kairu.core.session.SessionManager;
+import com.kairu.core.time.Timer;
+import com.kairu.core.time.RealClock;
 
 public class Application {
 
@@ -32,168 +32,173 @@ public class Application {
 
     private static SessionManager manager;
     private static ApplicationContext context;
+    private static Dispatcher dispatcher;
     private static ScheduledExecutorService scheduler;
     private static Scanner scanner = new Scanner(System.in);
-    
 
-    // Sistema de Notificação no Timer
     private static String statusMessage = null;
     private static Instant messageExpiry = null;
 
     public static void main(String[] args) {
-        context = Bootstrap.createFileContext(new RealClock());   
+        context = Bootstrap.createFileContext(new RealClock());
         manager = context.getManager();
-        
+        dispatcher = CommandBootstrap.createDispatcher(context, scanner);
+
         showBanner();
-        System.out.println("\n\n"); 
-            
+        System.out.println("\n\n");
+
         while (true) {
-            System.out.print(BOLD + CYAN + "kairu "+ getPromptTagSuffix() + "> " + RESET);
+            System.out.print(BOLD + CYAN + "kairu " + getPromptTagSuffix() + "> " + RESET);
             if (!scanner.hasNextLine()) break;
             String input = scanner.nextLine().toLowerCase().trim();
+
+            if (input.isEmpty()) continue;
 
             if (input.equals("exit")) {
                 if (confirmExit()) break;
                 else continue;
             }
 
-            switch (input) {
-                case "start"      -> safeRun(Application::startSession);
-                case "pause"      -> safeRun(Application::pauseSession);
-                case "resume"     -> safeRun(Application::resumeSession);
-                case "stop"       -> safeRun(Application::stopSession);
-                case "analytics"  -> safeRun(Application::showAnalyticsMenu);
-                case "help"       -> safeRun(Application::showHelp);
-                case "create tag" -> safeRun(Application::createTag);
-                case "list tag"   -> safeRun(Application::listTags);
-                case ""           -> {}
-                default           -> setStatusMessage(YELLOW + "Comando desconhecido." + RESET, 3);
+            stopLiveTimer();
+
+            CommandResult<?> result = dispatcher.dispatch(input, new String[]{});
+
+            if (result.isSuccess()) {
+                handleSuccessResult(input, result);
+            } else {
+                handleFailureResult(result);
+            }
+
+            if (manager.getCurrentRuntime() != null) {
+                startLiveTimer();
             }
         }
-        
+
         stopLiveTimer();
-        System.out.println(BLUE + "Até logo!" + RESET);
+        System.out.println(BLUE + "Ate logo!" + RESET);
         System.exit(0);
     }
 
-    private static void setStatusMessage(String message, int seconds) {
-      if (manager.getCurrentRuntime() != null) {
-        statusMessage = message;
-        messageExpiry = Instant.now().plusSeconds(seconds);
-      } else {
-        System.out.println(message);
-      }    
+    private static void handleSuccessResult(String input, CommandResult<?> result) {
+        Object data = result.getData().orElse(null);
+
+        if (data instanceof String text && !text.isEmpty()) {
+            if (text.equals("list-sessions")) {
+                printListSessions();
+            } else if (text.equals("TOO_SHORT")) {
+                handleTooShortStop();
+            } else if (text.equals("SUCCESS")) {
+                System.out.println(BLUE + "\r✔ Sessao salva!" + RESET + "\n\n");
+            } else {
+                System.out.println(text);
+            }
+        }
+    }
+
+    private static void handleTooShortStop() {
+        while (true) {
+            System.out.print(RED + BOLD + "\r* Sessao muito curta (" + manager.getCurrentRuntime().getDuration().toMinutes() + "min). " +
+                    "Deseja descarta-la e encerrar? [s/n]: " + RESET);
+            String choice = scanner.nextLine().toLowerCase().trim();
+
+            if (choice.equals("s")) {
+                manager.cancelSession();
+                System.out.println(YELLOW + "\r" + ERASE_LINE + "Sessao descartada." + RESET + "\n");
+                break;
+            } else if (choice.equals("n")) {
+                System.out.print(MOVE_UP + "\r" + ERASE_LINE);
+                startLiveTimer();
+                break;
+            } else {
+                System.out.print(YELLOW + "\r* Opcao invalida! Digite 's' ou 'n'." + RESET);
+                try {
+                    Thread.sleep(2000);
+                } catch (InterruptedException ignored) {
+                }
+                System.out.print("\r" + ERASE_LINE);
+            }
+        }
+    }
+
+    private static void handleFailureResult(CommandResult<?> result) {
+        Throwable error = result.getError().orElse(null);
+        if (error == null) return;
+
+        if (error instanceof IllegalArgumentException && error.getMessage() != null
+                && error.getMessage().startsWith("unknown command:")) {
+            setStatusMessage(YELLOW + "Comando desconhecido." + RESET, 3);
+        } else {
+            setStatusMessage(RED + "Erro: " + error.getMessage() + RESET, 5);
+        }
     }
 
     private static boolean confirmExit() {
-        if(manager.getCurrentRuntime() == null){
-          return true;
+        if (manager.getCurrentRuntime() == null) {
+            return true;
         }
-        
-        stopLiveTimer(); // Para o timer para não bagunçar a pergunta
-        System.out.print(RED + BOLD + "\r⚠ Sessão em progresso! Deseja cancelar e sair? [s/n]: " + RESET);
+
+        stopLiveTimer();
+        System.out.print(RED + BOLD + "\r* Sessao em progresso! Deseja cancelar e sair? [s/n]: " + RESET);
         String choice = scanner.nextLine().toLowerCase().trim();
-        
+
         if (choice.equals("s")) {
             return true;
         } else {
-            System.out.print(MOVE_UP + "\r" + ERASE_LINE); // Limpa a pergunta
-            startLiveTimer(); // Reinicia o timer visual
+            System.out.print(MOVE_UP + "\r" + ERASE_LINE);
+            startLiveTimer();
             return false;
         }
     }
 
-    private static void startSession() {
-        if (manager.getCurrentRuntime() != null){
-          setStatusMessage(RED + "Erro: Sessão ja iniciada." + RESET, 5);
-          return;
-        }
-
-        System.out.print(RED + BOLD + "Digite a tag da sessão:" + RESET);
-        listTags();
-        String choice = scanner.nextLine().toLowerCase().trim();
-        
-        Optional<Tag> tagEncontrada = context.getTagRepository().findByName(choice);
-
-        if (tagEncontrada.isPresent()) {
-          System.out.print(MOVE_UP + "\r" + ERASE_LINE); // Limpa a pergunta
-          manager.startSession(tagEncontrada.get());
-          startLiveTimer();
+    private static void printListSessions() {
+        var sessions = context.getSessionRepository().findAll();
+        System.out.println(BOLD + "\n--- HISTORICO ---" + RESET);
+        if (sessions.isEmpty()) {
+            System.out.println("Vazio.");
         } else {
-          setStatusMessage("Digite uma tag válida, ou crie uma nova tag", 5);
+            sessions.forEach(s -> System.out.printf(
+                    "[%s] | %s | %d min | %d intervalos%n",
+                    s.getTag() != null ? s.getTag().getName() : "Sem Tag",
+                    s.getStartedAt(),
+                    s.getTotalDuration().toMinutes(),
+                    s.getIntervals().size()));
         }
+        System.out.println();
     }
 
-    private static void pauseSession() {
-            manager.pauseSession();
-    }
-
-    private static void resumeSession() {
-            manager.resumeSession();
-    }
-
-    private static void stopSession() {
-        if (manager.getCurrentRuntime() == null) return;
-
-        StopResult result = manager.stopSession();
-        
-        if (result == StopResult.TOO_SHORT) {
-          stopLiveTimer();
-          while(true){  
-            System.out.print(RED + BOLD + "\r⚠ Sessão muito curta (" + manager.getCurrentRuntime().getDuration().toMinutes() + "min). " +
-                                                                  "Deseja descartá-la e encerrar? [s/n]: " + RESET);
-            String choice = scanner.nextLine().toLowerCase().trim();
-
-            if (choice.equals("s")){
-              manager.cancelSession();
-              System.out.println(YELLOW + "\r" + ERASE_LINE + "Sessão descartada." + RESET + "\n");
-              break;
-            } else if( choice.equals("n")){
-              System.out.print(MOVE_UP + "\r" + ERASE_LINE); // Limpa a pergunta
-              startLiveTimer(); // Volta o relógio
-              break;
-            } else{
-              System.out.print(YELLOW + "\r⚠ Opção inválida! Digite 's' ou 'n'." + RESET);
-              try { 
-                Thread.sleep(2000); 
-              } catch (InterruptedException ignored) {}
-                System.out.print("\r" + ERASE_LINE);
-            }
-          }
-        
+    private static void setStatusMessage(String message, int seconds) {
+        if (manager.getCurrentRuntime() != null) {
+            statusMessage = message;
+            messageExpiry = Instant.now().plusSeconds(seconds);
         } else {
-            stopLiveTimer();
-            System.out.println(BLUE + "\r✔ Sessão salva!" + RESET + "\n\n");
+            System.out.println(message);
         }
     }
 
     private static void startLiveTimer() {
-        if (scheduler != null){
-          scheduler.shutdownNow();
+        if (scheduler != null) {
+            scheduler.shutdownNow();
         }
         scheduler = Executors.newSingleThreadScheduledExecutor();
-        String[] spinner = { "⏳", "⌛"};
-        
+        String[] spinner = {"⏳", "⌛"};
+
         scheduler.scheduleAtFixedRate(() -> {
             System.out.print(SAVE_CURSOR);
             System.out.print(MOVE_UP + "\r" + ERASE_LINE);
 
-            // Prioridade 1: Mostrar mensagem de erro/aviso se existir e não expirou
             if (statusMessage != null && Instant.now().isBefore(messageExpiry)) {
                 System.out.print(statusMessage);
-            } 
-            // Prioridade 2: Mostrar o Timer se estiver rodando
-            else if (manager.getCurrentRuntime() != null) {
+            } else if (manager.getCurrentRuntime() != null) {
                 Duration totalDisplay = manager.getCurrentRuntime().getDuration();
-                
-                String time = String.format("%02d:%02d:%02d", 
-                    totalDisplay.toHours(), totalDisplay.toMinutesPart(), totalDisplay.toSecondsPart());
+
+                String time = String.format("%02d:%02d:%02d",
+                        totalDisplay.toHours(), totalDisplay.toMinutesPart(), totalDisplay.toSecondsPart());
 
                 if (!(Timer.State.PAUSED == manager.getTimer().getState())) {
                     String icon = spinner[(int) (System.currentTimeMillis() / 500 % spinner.length)];
                     System.out.print(YELLOW + icon + " Foco: " + BOLD + time + RESET + " | 'stop' para encerrar");
                 } else {
-                    System.out.print(RED + BOLD + "‖ PAUSADO (" + time + ")" + RESET);
+                    System.out.print(RED + BOLD + "|| PAUSADO (" + time + ")" + RESET);
                 }
             }
 
@@ -208,161 +213,16 @@ public class Application {
         System.out.flush();
     }
 
-  private static void listSessions() {
-    List<Session> sessions = context.getSessionRepository().findAll();
-    System.out.println(BOLD + "\n--- HISTÓRICO ---" + RESET);
-    if (sessions.isEmpty()) System.out.println("Vazio.");
-    else sessions.forEach(s -> System.out.printf(
-                         "[%s] | %s | %d min | %d intervalos%n",
-                         s.getTag() != null ? s.getTag().getName() : "Sem Tag",  
-                         s.getStartedAt(),                                                             
-                         s.getTotalDuration().toMinutes(),                      
-                         s.getIntervals().size()
-    ));
-    System.out.println();
-  }
-
-  private static void showBanner() {
-    System.out.println(BOLD + BLUE + "=== KAIRU PRODUCTIVITY TIMER ===" + RESET);
-  }
-
-  private static void showHelp() {
-    System.out.println(CYAN + BOLD + "\nComandos disponíveis:" + RESET);
-
-    String format = "  " + GREEN + "%-10s" + RESET + " ------> %s%n";
-
-
-    System.out.printf(format, "start", "Inicia uma nova sessão de foco");
-    System.out.printf(format, "pause", "Pausa a sessão atual");
-    System.out.printf(format, "resume", "Retoma uma sessão pausada");
-    System.out.printf(format, "stop", "Finaliza e salva a sessão");
-    System.out.printf(format, "list", "Exibe seu histórico de estudos");
-    System.out.printf(format, "exit", "Sai do KAIRu");
-    System.out.println();    
-  }
-  
-  private static void safeRun(Runnable action){
-    try{
-      action.run();
-    }catch(Exception e){
-      setStatusMessage(RED + "Erro: " + e.getMessage() + RESET, 5);
+    private static void showBanner() {
+        System.out.println(BOLD + BLUE + "=== KAIRU PRODUCTIVITY TIMER ===" + RESET);
     }
-  }
-  
-  private static void createTag(){
-    if (context.getManager().getCurrentRuntime() == null) {
-      System.out.print(RED + BOLD + "Escolha o nome da Tag: " + RESET);
-      String choice = scanner.nextLine();
-      if (choice == null || choice.isBlank()) {
-        setStatusMessage(RED + "Erro: O nome da tag não pode ser vazio!" + RESET, 4);
-        return; // Corta a execução aqui para não salvar no repositório
-      }
 
+    private static String getPromptTagSuffix() {
+        var runtime = manager.getCurrentRuntime();
 
-      Tag tag = new Tag(choice);
-      context.getTagRepository().save(tag);
-        
-      System.out.println(GREEN + "✔ Tag '" + choice + "' criada com sucesso!" + RESET + "\n");
-    } else {
-      setStatusMessage(RED + "Vai estudar, FOCO!!!" + RESET, 5);
+        if (runtime == null || manager.getCurrentTag() == null) {
+            return "";
+        }
+        return " " + YELLOW + "[" + manager.getCurrentTag().getName() + "]" + CYAN;
     }
-  }
-
-  private static void listTags(){
-    Set<Tag> tags = context.getTagRepository().findAll();
-    System.out.println(BOLD + "\n--- TAGS ---" + RESET);
-    if (tags.isEmpty()){
-      System.out.println("Vazio");
-    } else {
-      tags.forEach(s -> System.out.printf("- %s%n", s.getName()));
-    }
-  }
-
-  private static String getPromptTagSuffix() {
-    var runtime = manager.getCurrentRuntime();
-    
-    if (runtime == null || manager.getCurrentTag() == null) {
-        return "";
-    }
-    return " " + YELLOW + "[" + manager.getCurrentTag().getName() + "]" + CYAN;
-  }
-
-  private static void showAnalyticsMenu() {
-    System.out.println("\n" + BOLD + BLUE + "=== KAIRU ANALYTICS ===" + RESET);
-    System.out.println("1. All Tags Summary");
-    System.out.println("2. Specific Tag Stats");
-    System.out.println("3. Specific Date Stats");
-    System.out.println("4. Recent Days Evolution");
-    System.out.println("5. Current Week Report");
-    System.out.println("6. show older list viewer");
-    System.out.println("7. Back to Main Menu");
-    System.out.print(BOLD + CYAN + "analytics > " + RESET);
-
-    String choice = scanner.nextLine().trim();
-
-    switch (choice) {
-        case "1" -> {
-            var stats = context.getAnalytics().getAllTagsStats();
-            printMetricList("All Tags", stats);
-        }
-        case "2" -> {
-            System.out.print(BOLD + "Enter Tag Name: " + RESET);
-            String tagName = scanner.nextLine().trim();
-            var stat = context.getAnalytics().getStatsForTag(tagName);
-            printSingleMetric(stat);
-        }
-        case "3" -> {
-            System.out.print(BOLD + "Enter Date (YYYY-MM-DD): " + RESET);
-            String dateInput = scanner.nextLine().trim();
-            try {
-                java.time.LocalDate date = java.time.LocalDate.parse(dateInput);
-                var stat = context.getAnalytics().getStatsForDate(date);
-                printSingleMetric(stat);
-            } catch (java.time.format.DateTimeParseException e) {
-                setStatusMessage(RED + "Invalid date format! Use YYYY-MM-DD" + RESET, 4);
-            }
-        }
-        case "4" -> {
-            System.out.print(BOLD + "How many days back?: " + RESET);
-            try {
-                int days = Integer.parseInt(scanner.nextLine().trim());
-                var stats = context.getAnalytics().getRecentDaysStats(days);
-                printMetricList("Recent Days Evolution", stats);
-            } catch (NumberFormatException e) {
-                setStatusMessage(RED + "Invalid number of days!" + RESET, 4);
-            }
-        }
-        case "5" -> {
-            var stats = context.getAnalytics().getCurrentWeekStats();
-            printMetricList("Current Week Report", stats);
-        }
-        case "6" ->{
-          safeRun(Application::listSessions);
-        }
-        case "7" -> {
-            // Just exits the method and goes back to the main loop
-        }
-        default -> setStatusMessage(RED + "Unknown analytics option!" + RESET, 4);
-    }
-  }
-
-  private static void printMetricList(String title, List<StatisticsService.MetricResult> stats) {
-    System.out.println("\n" + BOLD + GREEN + "--- " + title + " ---" + RESET);
-    if (stats.isEmpty()) {
-        System.out.println("No data found for this period.");
-        return;
-    }
-    System.out.printf(BOLD + "%-20s | %-12s | %-10s%n" + RESET, "Group/Key", "Total Time", "Sessions");
-    System.out.println("-----------------------------------------------------");
-    stats.forEach(stat -> System.out.printf("%-20s | %-10d min | %-10d%n", 
-            stat.groupKey(), stat.totalMinutes(), stat.sessionCount()));
-    System.out.println();
-  }
-
-  private static void printSingleMetric( StatisticsService.MetricResult stat) {
-    System.out.println("\n" + BOLD + GREEN + "--- Result ---" + RESET);
-    System.out.printf(BOLD + "Target: " + RESET + "%s%n", stat.groupKey());
-    System.out.printf(BOLD + "Total Time: " + RESET + "%d min%n", stat.totalMinutes());
-    System.out.printf(BOLD + "Sessions: " + RESET + "%d%n%n", stat.sessionCount());
-  }
 }
