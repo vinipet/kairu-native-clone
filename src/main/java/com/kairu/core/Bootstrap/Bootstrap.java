@@ -18,7 +18,7 @@ public class Bootstrap{
     EventBus bus = new SimpleEventBus();
     SessionRepository repository =  PersistenceModule.initializeFileSessionPersistence(PersistencePaths.sessionsFile());
     SessionManager manager = CoreModule.createCore(bus, clock);
-    TagRepository tagRepository = PersistenceModule.initializeFileTagPersistence(PersistencePaths.TagFile());
+    TagRepository tagRepository = PersistenceModule.initializeFileTagPersistence(PersistencePaths.tagFile());
     SessionStatsService analytics = new SessionStatsService(repository);
 
     bus.subscribeListener(SessionCompletedEvent.class, new SessionCompletedPersistenceListener(repository));

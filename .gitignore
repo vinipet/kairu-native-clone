@@ -31,3 +31,6 @@ build/
 
 ### VS Code ###
 .vscode/
+
+kairu-stable.jar
+AGENTS.md

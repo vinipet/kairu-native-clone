@@ -31,6 +31,13 @@
       
     </dependencies>
     <build>
+        <resources>
+          <resource>
+            <directory>src/main/resources</directory>
+            <filtering>true</filtering>
+          </resource>
+        </resources>
+
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
@@ -57,4 +64,19 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+      <profile>
+        <id>dev</id>
+        <properties>
+            <kairu.env>dev</kairu.env>
+        </properties>
+      </profile>
+      <profile>
+        <id>stable</id>
+        <properties>
+            <kairu.env>stable</kairu.env>
+        </properties>
+      </profile>
+    </profiles>
 </project>

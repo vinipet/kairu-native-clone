@@ -12,6 +12,7 @@ import com.kairu.core.Bootstrap.Bootstrap;
 import com.kairu.core.Bootstrap.CommandBootstrap;
 import com.kairu.core.commands.CommandResult;
 import com.kairu.core.commands.Dispatcher;
+import com.kairu.core.persistence.PersistencePaths;
 import com.kairu.core.session.SessionManager;
 import com.kairu.core.time.Timer;
 import com.kairu.core.time.RealClock;
@@ -48,7 +49,7 @@ public class Application {
         System.out.println("\n\n");
 
         while (true) {
-            System.out.print(BOLD + CYAN + "kairu " + getPromptTagSuffix() + "> " + RESET);
+            System.out.print(BOLD + CYAN + "kairu " + PersistencePaths.env + getPromptTagSuffix() + "> " + RESET);
             if (!scanner.hasNextLine()) break;
             String input = scanner.nextLine().toLowerCase().trim();
 
