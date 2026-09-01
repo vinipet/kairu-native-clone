@@ -1,6 +1,7 @@
 package com.kairu.core.time;
 
 import com.kairu.core.bus.EventBus;
+import com.kairu.core.event.TimerCancelEvent;
 import com.kairu.core.event.TimerPausedEvent;
 import com.kairu.core.event.TimerResumeEvent;
 import com.kairu.core.event.TimerStartedEvent;
@@ -91,5 +92,6 @@ public final class sessionTimer implements Timer{
     state = State.IDLE;
     startedAt = null;
     elapsedTime = 0;
+    bus.publishEvent(new TimerCancelEvent(clock.now(),id));
   }
 }

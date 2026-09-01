@@ -28,7 +28,8 @@ public class SessionRuntime implements EventListener<Event>{
     IDLE,
     RUNNING,
     PAUSED,
-    STOPPED
+    STOPPED,
+    CANCELLED
   };
   
   public Duration getDuration(){
@@ -51,7 +52,8 @@ public class SessionRuntime implements EventListener<Event>{
     handlers.put(TimerStoppedEvent.class, e -> this.handleStop((TimerStoppedEvent) e));
     handlers.put(TimerPausedEvent.class, e -> this.handlePaused((TimerPausedEvent) e));
     handlers.put(TimerResumeEvent.class, e -> this.handleResume((TimerResumeEvent) e));
-    
+    handlers.put(TimerCancelEvent.class, e -> this.handleCancel((TimerCancelEvent)e));
+
   }
 
 
@@ -121,7 +123,16 @@ public class SessionRuntime implements EventListener<Event>{
 
   }
 
+  private void handleCancel(TimerCancelEvent e){
+    currentStart = null;
+    intervals.clear();
+    state = State.CANCELLED; 
+  }
+
   public Session finishSession(){
+    if(state == State.CANCELLED){
+      throw new IllegalStateException("cant finish a cancelled session");
+    }
     Session session = new Session(sessionId, intervals, tag);
     return session;
   }

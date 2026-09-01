@@ -5,6 +5,7 @@ import com.kairu.core.event.TimerStartedEvent;
 import com.kairu.core.event.TimerStoppedEvent;
 import com.kairu.core.time.ManualClock;
 import com.kairu.core.time.StopResult;
+import com.kairu.core.time.Timer;
 import com.kairu.core.time.TimerFactory;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -70,5 +71,46 @@ public class SessionManagerTest {
         
         manager.stopSession();
         assertNotNull(stopEventRef.get(), "O evento de TimerStopped deveria ter sido publicado");
+    }
+
+    @Test
+    void cancelSession_ShouldCleanUpRuntime() {
+        manager.startSession(tag);
+        assertNotNull(manager.getCurrentRuntime());
+
+        manager.cancelSession();
+
+        assertNull(manager.getCurrentRuntime());
+        assertNull(manager.getTimer());
+    }
+
+    @Test
+    void cancelSession_ShouldAllowStartingNewSession() {
+        manager.startSession(tag);
+        clock.advanceSeconds(1000);
+        manager.cancelSession();
+
+        assertDoesNotThrow(() -> manager.startSession(tag), "Deveria ser possível iniciar nova sessão após o cancel");
+    }
+
+    @Test
+    void cancelSession_ShouldResetTimerToIdle() {
+        manager.startSession(tag);
+        clock.advanceSeconds(1000);
+
+        manager.cancelSession();
+
+        Timer timerAfterCancel = manager.getTimer();
+        assertNull(timerAfterCancel);
+    }
+
+    @Test
+    void cancelSession_ShouldNotPersistSession() {
+        manager.startSession(tag);
+        clock.advanceSeconds(1000);
+
+        manager.cancelSession();
+
+        assertDoesNotThrow(() -> manager.startSession(tag), "Cancel não deve persistir sessão e deve permitir novo início");
     }
 }

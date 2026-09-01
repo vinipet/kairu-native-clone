@@ -4,6 +4,7 @@ import java.time.Duration;
 import java.util.UUID;
 
 import com.kairu.core.bus.EventBus;
+import com.kairu.core.event.TimerCancelEvent;
 import com.kairu.core.event.TimerPausedEvent;
 import com.kairu.core.event.TimerStartedEvent;
 import com.kairu.core.event.TimerResumeEvent;
@@ -44,6 +45,7 @@ public class SessionManager{
     bus.subscribeListener(TimerPausedEvent.class, currentRuntime);
     bus.subscribeListener(TimerResumeEvent.class, currentRuntime);
     bus.subscribeListener(TimerStoppedEvent.class, currentRuntime);
+    bus.subscribeListener(TimerCancelEvent.class, currentRuntime);
     timer = factory.createDefaultTimer(currentSessionId);
     timer.start();
 

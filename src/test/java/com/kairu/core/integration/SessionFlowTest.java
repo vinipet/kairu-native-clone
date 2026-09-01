@@ -7,10 +7,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.concurrent.atomic.AtomicReference;
 
 import com.kairu.core.bus.EventListener;
 import com.kairu.core.bus.SimpleEventBus;
 import com.kairu.core.event.SessionCompletedEvent;
+import com.kairu.core.event.TimerCancelEvent;
 import com.kairu.core.event.TimerPausedEvent;
 import com.kairu.core.event.TimerResumeEvent;
 import com.kairu.core.event.TimerStartedEvent;
@@ -60,6 +62,7 @@ public class SessionFlowTest{
     bus.subscribeListener(TimerStoppedEvent.class, runtime );
     bus.subscribeListener(TimerResumeEvent.class, runtime );
     bus.subscribeListener(TimerPausedEvent.class, runtime );
+    bus.subscribeListener(TimerCancelEvent.class, runtime );
     
     timer.start();
     clock.advanceSeconds(600);
@@ -135,5 +138,71 @@ public class SessionFlowTest{
         
     Session session = runtime.finishSession();
     assertNotNull(session);
+  }
+
+  @Test
+  void cancelFlow_ImmediatelyAfterStart_ShouldNotPersist() {
+    SessionRepository repository = new InMemorySessionRepository();
+    EventListener<SessionCompletedEvent> listener = new SessionCompletedPersistenceListener(repository);
+    sessionTimer timer = new sessionTimer(clock, bus, id1);
+
+    bus.subscribeListener(SessionCompletedEvent.class, listener);
+    bus.subscribeListener(TimerStartedEvent.class, runtime);
+    bus.subscribeListener(TimerStoppedEvent.class, runtime);
+    bus.subscribeListener(TimerResumeEvent.class, runtime);
+    bus.subscribeListener(TimerPausedEvent.class, runtime);
+    bus.subscribeListener(TimerCancelEvent.class, runtime);
+
+    timer.start();
+    clock.advanceSeconds(600);
+    timer.cancel();
+
+    assertEquals(0, repository.findAll().size());
+    assertEquals(Timer.State.IDLE, timer.getState());
+    assertEquals(0, runtime.getDuration().toSeconds());
+  }
+
+  @Test
+  void cancelAfterPauseResume_ShouldNotPersist() {
+    SessionRepository repository = new InMemorySessionRepository();
+    EventListener<SessionCompletedEvent> listener = new SessionCompletedPersistenceListener(repository);
+    sessionTimer timer = new sessionTimer(clock, bus, id1);
+
+    bus.subscribeListener(SessionCompletedEvent.class, listener);
+    bus.subscribeListener(TimerStartedEvent.class, runtime);
+    bus.subscribeListener(TimerStoppedEvent.class, runtime);
+    bus.subscribeListener(TimerResumeEvent.class, runtime);
+    bus.subscribeListener(TimerPausedEvent.class, runtime);
+    bus.subscribeListener(TimerCancelEvent.class, runtime);
+
+    timer.start();
+    clock.advanceSeconds(600);
+    timer.pause();
+    clock.advanceSeconds(300);
+    timer.resume();
+    clock.advanceSeconds(600);
+    timer.cancel();
+
+    assertEquals(0, repository.findAll().size());
+    assertThrows(IllegalStateException.class, () -> runtime.finishSession());
+  }
+
+  @Test
+  void cancelTimer_ShouldNotPublishSessionCompleted() {
+    AtomicReference<SessionCompletedEvent> completedRef = new AtomicReference<>();
+    sessionTimer timer = new sessionTimer(clock, bus, id1);
+
+    bus.subscribeListener(SessionCompletedEvent.class, completedRef::set);
+    bus.subscribeListener(TimerStartedEvent.class, runtime);
+    bus.subscribeListener(TimerStoppedEvent.class, runtime);
+    bus.subscribeListener(TimerResumeEvent.class, runtime);
+    bus.subscribeListener(TimerPausedEvent.class, runtime);
+    bus.subscribeListener(TimerCancelEvent.class, runtime);
+
+    timer.start();
+    clock.advanceSeconds(600);
+    timer.cancel();
+
+    assertNull(completedRef.get());
   }
 }
