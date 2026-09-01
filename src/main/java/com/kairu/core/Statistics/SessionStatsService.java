@@ -99,13 +99,12 @@ public class SessionStatsService implements StatisticsService {
 
     private Map<String, List<Session>> groupSessionsByTag(List<Session> sessions) {
         return sessions.stream()
-                .filter(s -> s.getTag() != null && s.getTag().getName() != null)
                 .collect(Collectors.groupingBy(s -> s.getTag().getName()));
     }
 
     private List<Session> fyndSessionsForTag(List<Session> sessions, String tagName) {
         return sessions.stream()
-                .filter(s -> s.getTag() != null && tagName.equalsIgnoreCase(s.getTag().getName()))
+                .filter(s -> tagName.equalsIgnoreCase(s.getTag().getName()))
                 .toList();
     }
 

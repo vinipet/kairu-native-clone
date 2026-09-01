@@ -1,13 +1,14 @@
 package com.kairu.core.persistence.repository;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.stream.Stream;
 
 import com.google.gson.Gson;
 import com.kairu.core.persistence.dto.SessionDTO;
@@ -40,7 +41,7 @@ public class FileSessionRepository implements SessionRepository {
         StandardOpenOption.APPEND
       );
     }catch(IOException e){
-      throw new RuntimeException("Erro ao persistir sessão",e);
+      throw new IllegalStateException("Erro ao persistir sessão",e);
     }
   }
 
@@ -51,16 +52,26 @@ public class FileSessionRepository implements SessionRepository {
         return List.of();
     }
 
-    try (Stream<String> lines = Files.lines(file)) {
+    List<Session> sessions = new ArrayList<>();
 
-        return lines
-            .map(line -> gson.fromJson(line, SessionDTO.class))
-            .map(SessionMapper::toEntity)
-            .toList();
-
+    try (BufferedReader reader = Files.newBufferedReader(file)) {
+        String line;
+        for (int lineNum = 1; (line = reader.readLine()) != null; lineNum++) {
+            if (line.isBlank()) {
+                continue;
+            }
+            try {
+                SessionDTO dto = gson.fromJson(line, SessionDTO.class);
+                sessions.add(SessionMapper.toEntity(dto));
+            } catch (Exception e) {
+                System.err.printf("Aviso: linha %d do arquivo de sessões ignorada — %s%n", lineNum, e.getMessage());
+            }
+        }
     } catch (IOException e) {
-        throw new IllegalStateException("failed to read sessions", e);
+        throw new IllegalStateException("Erro ao ler arquivo de sessões", e);
     }
+
+    return sessions;
   }
 
   @Override
@@ -69,14 +80,26 @@ public class FileSessionRepository implements SessionRepository {
         return Optional.empty();
     }
 
-    try (Stream<String> lines = Files.lines(file)) {
-        return lines
-            .map(line -> gson.fromJson(line, SessionDTO.class))
-            .map(SessionMapper::toEntity)
-            .filter(session -> session.sessionId.equals(sessionId))
-            .findFirst();
+    try (BufferedReader reader = Files.newBufferedReader(file)) {
+        String line;
+        for (int lineNum = 1; (line = reader.readLine()) != null; lineNum++) {
+            if (line.isBlank()) {
+                continue;
+            }
+            try {
+                SessionDTO dto = gson.fromJson(line, SessionDTO.class);
+                Session session = SessionMapper.toEntity(dto);
+                if (session.sessionId.equals(sessionId)) {
+                    return Optional.of(session);
+                }
+            } catch (Exception e) {
+                System.err.printf("Aviso: linha %d do arquivo de sessões ignorada — %s%n", lineNum, e.getMessage());
+            }
+        }
     } catch (IOException e) {
-        throw new RuntimeException("Erro ao ler o arquivo de sessões", e);
+        throw new IllegalStateException("Erro ao ler o arquivo de sessões", e);
     }
+
+    return Optional.empty();
   }
 }

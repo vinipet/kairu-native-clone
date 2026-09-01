@@ -14,6 +14,7 @@ import com.kairu.core.time.Interval;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -149,5 +150,45 @@ class SessionRepositoryTest {
 
       assertTrue(resultado.isPresent());
       assertEquals(idAlvo, resultado.get().sessionId);
+  }
+
+  @Test
+  void findAll_DeveIgnorarLinhaLixo_E_RetornarSessaoBoa() throws IOException {
+    Session boa = new Session(UUID.randomUUID(), List.of(new Interval(Instant.now(), Instant.now().plusSeconds(600))), new Tag("test"));
+    repository.save(boa);
+    Files.writeString(tempFile, "{isso nao eh json}" + System.lineSeparator(), StandardOpenOption.APPEND);
+
+    List<Session> resultado = repository.findAll();
+
+    assertEquals(1, resultado.size(), "Deve retornar apenas a sessão válida, ignorando a linha corrompida");
+    assertEquals(boa.sessionId, resultado.get(0).sessionId);
+  }
+
+  @Test
+  void findAll_DeveIgnorarLinhaSemTag_SemanticallyInvalida() throws IOException {
+    UUID idBoa = UUID.randomUUID();
+    UUID idSemTag = UUID.randomUUID();
+    repository.save(new Session(idBoa, List.of(new Interval(Instant.now(), Instant.now().plusSeconds(600))), new Tag("test")));
+
+    String semTag = "{\"id\":\"" + idSemTag + "\",\"intervals\":[{\"start\":\"2024-01-01T10:00:00Z\",\"end\":\"2024-01-01T11:00:00Z\"}]}";
+    Files.writeString(tempFile, semTag + System.lineSeparator(), StandardOpenOption.APPEND);
+
+    List<Session> resultado = repository.findAll();
+
+    assertEquals(1, resultado.size(), "Linha sem tag é semanticamente inválida — deve ser ignorada");
+    assertEquals(idBoa, resultado.get(0).sessionId);
+  }
+
+  @Test
+  void findById_DeveContinuarAposLinhaRuim_E_EncontrarAlvoNoFim() throws IOException {
+    UUID idAlvo = UUID.randomUUID();
+    repository.save(new Session(UUID.randomUUID(), List.of(new Interval(Instant.now(), Instant.now().plusSeconds(600))), new Tag("test")));
+    Files.writeString(tempFile, "{lixo corrompido}" + System.lineSeparator(), StandardOpenOption.APPEND);
+    repository.save(new Session(idAlvo, List.of(new Interval(Instant.now(), Instant.now().plusSeconds(600))), new Tag("test")));
+
+    Optional<Session> resultado = repository.findById(idAlvo);
+
+    assertTrue(resultado.isPresent(), "O loop deve continuar após a linha ruim e achar a sessão no fim do arquivo");
+    assertEquals(idAlvo, resultado.get().sessionId);
   }
 }

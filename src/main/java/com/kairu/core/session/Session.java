@@ -39,11 +39,14 @@ public class Session {
   }
 
   public Session(UUID sessionId,
-               List<Interval> intervals, Tag tag) {
+               List<Interval> intervals,
+               Tag tag) {
 
       if (intervals == null || intervals.isEmpty()) {
           throw new IllegalArgumentException("Session must have at least one interval");
       }
+      if (sessionId == null) {throw new IllegalArgumentException("id can't be null");}
+      if (tag == null){throw new IllegalArgumentException("tag can't be null");}
 
       this.intervals = List.copyOf(intervals);
       this.sessionId = sessionId;

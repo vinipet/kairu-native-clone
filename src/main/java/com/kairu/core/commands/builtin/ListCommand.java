@@ -42,7 +42,7 @@ public class ListCommand extends BuiltinCommand {
         } else {
             sessions.forEach(s -> sb.append(String.format(
                     "[%s] | %s | %d min | %d intervalos%n",
-                    s.getTag() != null ? s.getTag().getName() : "Sem Tag",
+                    s.getTag().getName(),
                     s.getStartedAt(),
                     s.getTotalDuration().toMinutes(),
                     s.getIntervals().size())));

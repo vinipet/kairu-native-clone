@@ -14,6 +14,11 @@ public class SessionDTO {
   private String tag;
 
   public SessionDTO(UUID id, List<IntervalDTO> intervals, Tag tag){
+
+    if(tag == null ) {throw new IllegalArgumentException("tag not be null!");}
+    if(id == null ) {throw new IllegalArgumentException("id not be null!");}
+    if(intervals == null ) {throw new IllegalArgumentException("intervals not be null!");}
+    if(intervals.isEmpty()){throw new IllegalArgumentException("interval cant be empty");}
     this.id = id;
     this.intervals = intervals;
     this.tag = tag.getName();
