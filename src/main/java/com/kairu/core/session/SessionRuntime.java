@@ -13,6 +13,7 @@ import com.kairu.core.bus.EventBus;
 import com.kairu.core.bus.EventListener;
 import com.kairu.core.time.Clock;
 import com.kairu.core.time.Interval;
+import com.kairu.core.time.Timer;
 
 public class SessionRuntime implements EventListener<Event>{
   
@@ -24,6 +25,7 @@ public class SessionRuntime implements EventListener<Event>{
   private State state = State.IDLE;
   private EventBus bus;
   private Clock clock;
+  private Timer timer;
   private enum State{
     IDLE,
     RUNNING,
@@ -42,11 +44,12 @@ public class SessionRuntime implements EventListener<Event>{
     return passDuration;
   }
 
-  public SessionRuntime(UUID sessionIdParam, EventBus bus, Clock clock, Tag tag){
+  public SessionRuntime(UUID sessionIdParam, EventBus bus, Clock clock, Tag tag, Timer timer){
     this.sessionId = sessionIdParam;
     this.bus = bus;
     this.clock = clock;
     this.tag = tag;
+    this.timer = timer;
 
     handlers.put(TimerStartedEvent.class, e -> this.handleStart((TimerStartedEvent) e));
     handlers.put(TimerStoppedEvent.class, e -> this.handleStop((TimerStoppedEvent) e));
@@ -139,5 +142,13 @@ public class SessionRuntime implements EventListener<Event>{
 
   public Instant getCurrentStart(){
     return currentStart;
+  }
+
+  public Timer getTimer() {
+      return timer;
+  }
+
+  public Tag getTag() {
+      return tag;
   }
 }

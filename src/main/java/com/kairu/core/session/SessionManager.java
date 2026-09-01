@@ -21,9 +21,6 @@ public class SessionManager{
   private final Clock clock;
   private final TimerFactory factory;
   private SessionRuntime currentRuntime;
-  private UUID currentSessionId;
-  private Tag currentTag;
-  private Timer timer;
 
   public SessionManager(EventBus bus, Clock clock, TimerFactory factory){
     
@@ -37,32 +34,31 @@ public class SessionManager{
     if(currentRuntime != null){
       throw new IllegalStateException("there is already an active session");
     }
-    
-    currentTag = tag;
-    currentSessionId = UUID.randomUUID();
-    currentRuntime = new SessionRuntime(currentSessionId, bus, clock, currentTag);
+    UUID id = UUID.randomUUID();
+    Timer timer = factory.createDefaultTimer(id);
+
+    currentRuntime = new SessionRuntime(id, bus, clock, tag, timer);
     bus.subscribeListener(TimerStartedEvent.class, currentRuntime);
     bus.subscribeListener(TimerPausedEvent.class, currentRuntime);
     bus.subscribeListener(TimerResumeEvent.class, currentRuntime);
     bus.subscribeListener(TimerStoppedEvent.class, currentRuntime);
     bus.subscribeListener(TimerCancelEvent.class, currentRuntime);
-    timer = factory.createDefaultTimer(currentSessionId);
-    timer.start();
 
+    currentRuntime.getTimer().start();
   }
 
   public void resumeSession(){
     if(currentRuntime == null){
       throw new IllegalStateException("need a active, and paused session to resume");
     }
-    timer.resume();
+    currentRuntime.getTimer().resume();
   }
 
   public void pauseSession(){
     if(currentRuntime == null){
       throw new IllegalStateException("need a active, and running session to pause");
     }
-    timer.pause();
+    currentRuntime.getTimer().pause();
   }
 
   public StopResult stopSession(){
@@ -75,24 +71,20 @@ public class SessionManager{
     if(duration.toMinutes() <= 5){
       return StopResult.TOO_SHORT;
     } else {
-      timer.stop();
+      currentRuntime.getTimer().stop();
 
       bus.unsubscribeForAll(currentRuntime);
 
       currentRuntime = null;
-      currentSessionId = null;
-      timer = null;
       return StopResult.SUCCESS;
     }
   }
 
   public void cancelSession(){
-    timer.cancel();
+    currentRuntime.getTimer().cancel();
     bus.unsubscribeForAll(currentRuntime);
 
     currentRuntime = null;
-    currentSessionId = null;
-    timer = null;
   }
   
   public SessionRuntime getCurrentRuntime() {
@@ -100,10 +92,8 @@ public class SessionManager{
   }
 
   public Timer getTimer(){
-    return timer;
+    if(currentRuntime == null) { return null;}
+    else{ return currentRuntime.getTimer();}
   }
 
-  public Tag getCurrentTag() {
-      return currentTag;
-  }
 }

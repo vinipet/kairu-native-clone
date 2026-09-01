@@ -22,14 +22,17 @@ public class SessionRuntimeTest{
   private SessionRuntime runtime;
   private UUID id1;
   private Tag tag;
-
+  private Timer timer;
+  private TimerFactory factory;
   @BeforeEach
   void setup(){
     this.bus = new SimpleEventBus();
     this.clock = new ManualClock(Instant.now());
     this.id1 = UUID.randomUUID();
     this.tag = new Tag("test");
-    this.runtime = new SessionRuntime(id1, bus, clock,tag);
+    this.factory = new TimerFactory(clock, bus);
+    this.timer = factory.createDefaultTimer(id1);
+    this.runtime = new SessionRuntime(id1, bus, clock,tag,timer);
   }
   private void startSession(UUID id) {
     runtime.onEvent(new TimerStartedEvent(clock.now(),id));

@@ -221,9 +221,9 @@ public class Application {
     private static String getPromptTagSuffix() {
         var runtime = manager.getCurrentRuntime();
 
-        if (runtime == null || manager.getCurrentTag() == null) {
+        if (runtime == null || manager.getCurrentRuntime().getTag() == null) {
             return "";
         }
-        return " " + YELLOW + "[" + manager.getCurrentTag().getName() + "]" + CYAN;
+        return " " + YELLOW + "[" + manager.getCurrentRuntime().getTag().getName() + "]" + CYAN;
     }
 }

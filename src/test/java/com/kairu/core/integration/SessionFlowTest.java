@@ -25,6 +25,7 @@ import com.kairu.core.session.SessionRuntime;
 import com.kairu.core.session.Tag;
 import com.kairu.core.time.ManualClock;
 import com.kairu.core.time.Timer;
+import com.kairu.core.time.TimerFactory;
 import com.kairu.core.time.sessionTimer;
 
 public class SessionFlowTest{
@@ -35,14 +36,18 @@ public class SessionFlowTest{
     private SessionRuntime runtime;
     private UUID id1;  
     private Tag tag;
+    private Timer timer;
+    private TimerFactory factory;
 
   @BeforeEach
   void setup() {
-    bus = new SimpleEventBus();
-    clock = new ManualClock(Instant.now());
-    id1 = UUID.randomUUID();
-    tag = new Tag("test");
-    runtime = new SessionRuntime(id1, bus, clock, tag);
+    this.bus = new SimpleEventBus();
+    this.clock = new ManualClock(Instant.now());
+    this.id1 = UUID.randomUUID();
+    this.tag = new Tag("test");
+    this.factory = new TimerFactory(clock, bus);
+    this.timer = factory.createDefaultTimer(id1);
+    this.runtime = new SessionRuntime(id1, bus, clock, tag,timer);
   } 
 
   private void startSession() {
