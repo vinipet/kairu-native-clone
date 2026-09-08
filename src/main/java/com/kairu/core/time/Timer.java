@@ -14,8 +14,6 @@ public interface Timer {
 
   public void pause();
   
-  public long getElapsedTime();
-
   public void stop();
 
   public void resume();

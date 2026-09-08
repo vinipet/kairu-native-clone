@@ -6,6 +6,12 @@ import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import com.kairu.core.bus.SimpleEventBus;
+import com.kairu.core.bus.SimpleListener;
+import com.kairu.core.event.TimerCancelEvent;
+import com.kairu.core.event.TimerPausedEvent;
+import com.kairu.core.event.TimerResumeEvent;
+import com.kairu.core.event.TimerStartedEvent;
+import com.kairu.core.event.TimerStoppedEvent;
 import static org.junit.jupiter.api.Assertions.*;
 
 public class SimpleTimerTest {
@@ -22,14 +28,83 @@ public class SimpleTimerTest {
     this.timer = new sessionTimer(clock, bus,id);
   }
 
+  @Test
+  public void startMovesToRunningAndPublishesStartedEvent(){
+    SimpleListener<TimerStartedEvent> listener = new SimpleListener<>();
+    bus.subscribeListener(TimerStartedEvent.class, listener);
+
+    timer.start();
+
+    assertEquals(Timer.State.RUNNING, timer.getState());
+    assertEquals(1, listener.getEvents().size());
+    assertEquals(id, listener.getEvents().get(0).getSessionId());
+  }
 
   @Test
-  public void shouldCalculateTimeBetweenStartAndPause() {
+  public void pauseMovesToPausedAndPublishesPausedEvent(){
+    SimpleListener<TimerPausedEvent> listener = new SimpleListener<>();
+    bus.subscribeListener(TimerPausedEvent.class, listener);
     timer.start();
-    clock.advanceSeconds(10);
+
     timer.pause();
 
-    assertEquals((long) 10, timer.getElapsedTime());
+    assertEquals(Timer.State.PAUSED, timer.getState());
+    assertEquals(1, listener.getEvents().size());
+    assertInstanceOf(TimerPausedEvent.class, listener.getEvents().get(0));
+  }
+
+  @Test
+  public void stopFromRunningMovesToStoppedAndPublishesStoppedEvent(){
+    SimpleListener<TimerStoppedEvent> listener = new SimpleListener<>();
+    bus.subscribeListener(TimerStoppedEvent.class, listener);
+    timer.start();
+
+    timer.stop();
+
+    assertEquals(Timer.State.STOPPED, timer.getState());
+    assertEquals(1, listener.getEvents().size());
+    assertEquals(id, listener.getEvents().get(0).getSessionId());
+  }
+
+  @Test
+  public void stopFromPausedMovesToStoppedAndPublishesStoppedEvent(){
+    SimpleListener<TimerStoppedEvent> listener = new SimpleListener<>();
+    bus.subscribeListener(TimerStoppedEvent.class, listener);
+    timer.start();
+    timer.pause();
+
+    timer.stop();
+
+    assertEquals(Timer.State.STOPPED, timer.getState());
+    assertEquals(1, listener.getEvents().size());
+    assertEquals(id, listener.getEvents().get(0).getSessionId());
+  }
+
+  @Test
+  public void resumeMovesToRunningAndPublishesResumeEvent(){
+    SimpleListener<TimerResumeEvent> listener = new SimpleListener<>();
+    bus.subscribeListener(TimerResumeEvent.class, listener);
+    timer.start();
+    timer.pause();
+
+    timer.resume();
+
+    assertEquals(Timer.State.RUNNING, timer.getState());
+    assertEquals(1, listener.getEvents().size());
+    assertEquals(id, listener.getEvents().get(0).getSessionId());
+  }
+
+  @Test
+  public void cancelMovesToIdleAndPublishesCancelEvent(){
+    SimpleListener<TimerCancelEvent> listener = new SimpleListener<>();
+    bus.subscribeListener(TimerCancelEvent.class, listener);
+    timer.start();
+
+    timer.cancel();
+
+    assertEquals(Timer.State.IDLE, timer.getState());
+    assertEquals(1, listener.getEvents().size());
+    assertEquals(id, listener.getEvents().get(0).getSessionId());
   }
 
   @Test
@@ -51,57 +126,34 @@ public class SimpleTimerTest {
   }
 
   @Test
-  public void shouldCalculateTimeBetweenStartAndPauseTwice(){
-    timer.start();
-    clock.advanceSeconds(5);
-    timer.pause();
-
-    timer.resume();
-    clock.advanceSeconds(5);
-    timer.pause();
-
-    assertEquals(10, timer.getElapsedTime());
+  public void throwErrorWhenPauseBeforeStart(){
+    assertThrows(IllegalStateException.class, ()-> {
+      timer.pause();
+    });
   }
 
   @Test
-  public void timerStopMantainElapsedTime(){  
+  public void throwErrorWhenResumeWithoutPause(){
     timer.start();
-    clock.advanceSeconds(5);
+    assertThrows(IllegalStateException.class, ()-> {
+      timer.resume();
+    });
+  }
+
+  @Test
+  public void throwErrorWhenStopOnIdle(){
+    assertThrows(IllegalStateException.class, ()-> {
+      timer.stop();
+    });
+  }
+
+  @Test
+  public void throwErrorWhenStopTwice(){
+    timer.start();
     timer.stop();
-
-    assertEquals(5, timer.getElapsedTime());
-  }
-  
-  @Test
-  public void timerCanStopWhenPaused(){
-    timer.start();
-    clock.advanceSeconds(5);
-    timer.pause();
-    timer.stop();
-
-      assertEquals(5, timer.getElapsedTime());
+    assertThrows(IllegalStateException.class, ()-> {
+      timer.stop();
+    });
   }
 
-  @Test
-  public void advanceTimeOnPauseCantCountToElapsedTime(){
-  timer.start();
-  clock.advanceSeconds(5);
-  timer.pause();
-
-  clock.advanceSeconds(100); // não deve contar
-
-  timer.resume();
-  clock.advanceSeconds(5);
-  timer.stop();
-
-  assertEquals(10, timer.getElapsedTime());
-  }
-
-  @Test
-  public void shouldReturnElapsedTimeWhileRunning() {
-    timer.start();
-    clock.advanceSeconds(5);
-
-    assertEquals(5, timer.getElapsedTime());
-  }
 }
