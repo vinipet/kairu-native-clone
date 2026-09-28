@@ -2,6 +2,7 @@ package com.kairu.core.Statistics;
 
 import com.kairu.core.session.Session;
 import com.kairu.core.session.SessionRepository;
+import com.kairu.core.time.Clock;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -12,9 +13,13 @@ import java.util.stream.Collectors;
 public class SessionStatsService implements StatisticsService {
 
     private final SessionRepository sessionRepository;
+    private final Clock clock;
+    private final ZoneId zoneId;
 
-    public SessionStatsService(SessionRepository sessionRepository) {
+    public SessionStatsService(SessionRepository sessionRepository, Clock clock, ZoneId zoneId) {
         this.sessionRepository = sessionRepository;
+        this.zoneId = zoneId;
+        this.clock = clock;
     }
 
     @Override
@@ -63,7 +68,7 @@ public class SessionStatsService implements StatisticsService {
       }
 
       List<Session> allSessions = sessionRepository.findAll();
-      Map<java.time.LocalDate, List<Session>> groupedByDate = groupSessionsByDate(allSessions);
+      Map<LocalDate, List<Session>> groupedByDate = groupSessionsByDate(allSessions);
 
       java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.systemDefault());
       
@@ -95,11 +100,9 @@ public class SessionStatsService implements StatisticsService {
             .toList();
     }
 
-
-
     private Map<String, List<Session>> groupSessionsByTag(List<Session> sessions) {
         return sessions.stream()
-                .collect(Collectors.groupingBy(s -> s.getTag().getName()));
+          .collect(Collectors.groupingBy(s -> s.getTag().getName()));
     }
 
     private List<Session> fyndSessionsForTag(List<Session> sessions, String tagName) {
@@ -118,7 +121,6 @@ public class SessionStatsService implements StatisticsService {
         }));
     }
 
-
     private MetricResult calculateMetrics(String groupKey, List<Session> sessions) {
         if (sessions == null || sessions.isEmpty()) {
             return new MetricResult(groupKey, 0, 0);
@@ -132,4 +134,42 @@ public class SessionStatsService implements StatisticsService {
 
         return new MetricResult(groupKey, totalMinutes, sessionCount);
     }
+
+  public int getCurrentStreak(){
+    int streak = 0;
+
+    List<Session> allSessions = sessionRepository.findAll();
+    Map<LocalDate, List<Session>> days = groupSessionsByDate(allSessions);
+    LocalDate today = LocalDate.now(java.time.ZoneId.systemDefault());
+    
+    if(days.get(today) != null){
+      if(dayCoutToStreak(today, days)){
+        streak ++;
+      }
+    }
+
+    for (LocalDate cursor = today.minusDays(1) ; dayCoutToStreak(cursor, days) ; cursor = cursor.minusDays(1) ){
+      streak ++;
+    }
+
+    return streak;
+  }
+
+  private Boolean dayCoutToStreak(LocalDate day, Map<LocalDate, List<Session>> days){
+    long somaHorasDoDia = 0;
+    List<Session> sessions = days.get(day);
+    if(sessions == null){
+      return false;
+    }
+
+    for (Session session : sessions) {
+        somaHorasDoDia += session.getTotalDuration().toHours(); 
+    }
+    
+    if (somaHorasDoDia >= 3 || sessions.size() >= 3) {
+        return true;
+    }
+
+    return false;
+  }
 }

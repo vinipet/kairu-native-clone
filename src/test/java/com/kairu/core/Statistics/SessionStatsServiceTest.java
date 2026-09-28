@@ -7,12 +7,15 @@ import org.junit.jupiter.api.Test;
 import com.kairu.core.session.InMemorySessionRepository;
 import com.kairu.core.session.Session;
 import com.kairu.core.session.Tag;
+import com.kairu.core.time.Clock;
 import com.kairu.core.time.Interval;
+import com.kairu.core.time.ManualClock;
 import com.kairu.core.Statistics.StatisticsService.MetricResult;
 
 import java.time.DayOfWeek;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.time.Period;
 import java.time.ZoneId;
 import java.time.temporal.TemporalAdjusters;
 import java.util.List;
@@ -25,8 +28,9 @@ class SessionStatsServiceTest {
 
     @BeforeEach
     void setup() {
+        Clock clock = new ManualClock(Instant.now());
         repository = new InMemorySessionRepository();
-        service = new SessionStatsService(repository);
+        service = new SessionStatsService(repository, clock, ZoneId.systemDefault());
     }
 
     private Session criarSessao(Instant inicio, long duracaoSegundos, Tag tag) {
@@ -245,4 +249,151 @@ class SessionStatsServiceTest {
             assertEquals(0, r.sessionCount());
         });
     }
+
+    // ============= dayStreak =============
+
+    @Test
+    void dayStreak_3_dias_por_hora(){
+      Tag tag = new Tag("real tag");
+      Session session1day1 = criarSessao(Instant.now().minus(Period.ofDays(2)), 15000, tag);
+      Session sessionday2 = criarSessao(Instant.now().minus(Period.ofDays(1)), 15000, tag);
+      Session sessionday3 = criarSessao(Instant.now(), 15000, tag);
+      
+
+      repository.save(session1day1);
+      repository.save(sessionday2);
+      repository.save(sessionday3);
+
+      int streak = service.getCurrentStreak();
+      
+      assertEquals(3, streak);
+    }
+
+    @Test
+    void dayStreak_3_dias_por_session(){
+      Tag tag = new Tag("real tag");
+      Session session1 = criarSessao(Instant.now().minus(Period.ofDays(2)), 100, tag);
+      Session session2 = criarSessao(Instant.now().minus(Period.ofDays(2)), 100, tag);
+      Session session3 = criarSessao(Instant.now().minus(Period.ofDays(2)), 100, tag);
+
+      Session session4 = criarSessao(Instant.now().minus(Period.ofDays(1)), 100, tag);
+      Session session5 = criarSessao(Instant.now().minus(Period.ofDays(1)), 100, tag);
+      Session session6 = criarSessao(Instant.now().minus(Period.ofDays(1)), 100, tag);
+    
+      Session session7 = criarSessao(Instant.now(), 100, tag);
+      Session session8 = criarSessao(Instant.now(), 100, tag);
+      Session session9 = criarSessao(Instant.now(), 100, tag);
+      
+
+      repository.save(session1);
+      repository.save(session2);
+      repository.save(session3);
+      repository.save(session4);
+      repository.save(session5);
+      repository.save(session6);
+      repository.save(session7);
+      repository.save(session8);
+      repository.save(session9);
+
+      int streak = service.getCurrentStreak();
+      assertEquals(3, streak);
+    }
+
+    @Test    
+    void dayStreak_deveRetornar2diasPrqNaoTemHj(){
+      Tag tag = new Tag("real tag");
+      Session session1day1 = criarSessao(Instant.now().minus(Period.ofDays(2)), 10000, tag);
+      Session session2day1 = criarSessao(Instant.now().minus(Period.ofDays(2)), 10000, tag);
+      Session session3day1 = criarSessao(Instant.now().minus(Period.ofDays(2)), 10000, tag);
+      Session sessionday2 = criarSessao(Instant.now().minus(Period.ofDays(1)), 15000, tag);
+      
+
+      repository.save(session1day1);
+      repository.save(session2day1);
+      repository.save(session3day1);
+      repository.save(sessionday2);
+
+      int streak = service.getCurrentStreak();
+      
+      assertEquals(2, streak);
+    }
+
+    @Test
+    void dayStreak_1_hj_sem_nada(){
+      Tag tag = new Tag("real tag");
+      Session session4 = criarSessao(Instant.now().minus(Period.ofDays(1)), 100, tag);
+      Session session5 = criarSessao(Instant.now().minus(Period.ofDays(1)), 100, tag);
+      Session session6 = criarSessao(Instant.now().minus(Period.ofDays(1)), 100, tag);
+
+      repository.save(session4);
+      repository.save(session5);
+      repository.save(session6);
+
+      int streak = service.getCurrentStreak();
+      
+      assertEquals(1, streak);
+    }
+
+    @Test
+    void dayStreak_1_ontem_sem_nada(){
+      Tag tag = new Tag("real tag");
+      
+      Session session7 = criarSessao(Instant.now(), 100, tag);
+      Session session8 = criarSessao(Instant.now(), 100, tag);
+      Session session9 = criarSessao(Instant.now(), 100, tag);
+
+      repository.save(session7);
+      repository.save(session8);
+      repository.save(session9);
+
+      int streak = service.getCurrentStreak();
+      
+      assertEquals(1, streak);
+    }
+
+    @Test
+    void dayStreak_0_sem_nada(){
+      int streak = service.getCurrentStreak();
+      assertEquals(0, streak);
+    }
+    @Test
+    void dayStreak_sevePararNaPrimeiraFalha_mesmoComDiasCumpridosDepois(){
+      Tag tag = new Tag("real tag");
+      Session session1 = criarSessao(Instant.now().minus(Period.ofDays(2)), 100, tag);
+      Session session2 = criarSessao(Instant.now().minus(Period.ofDays(2)), 100, tag);
+      Session session3 = criarSessao(Instant.now().minus(Period.ofDays(2)), 100, tag);
+
+      Session session4 = criarSessao(Instant.now().minus(Period.ofDays(1)), 100, tag);
+      Session session5 = criarSessao(Instant.now().minus(Period.ofDays(1)), 100, tag);
+      Session session6 = criarSessao(Instant.now().minus(Period.ofDays(1)), 100, tag);
+      
+      Session session7 = criarSessao(Instant.now(), 100, tag);
+      Session session8 = criarSessao(Instant.now(), 100, tag);
+      Session session9 = criarSessao(Instant.now(), 100, tag);
+      
+      
+      Session session10 = criarSessao(Instant.now().minus(Period.ofDays(3)), 100, tag);
+      Session session11 = criarSessao(Instant.now().minus(Period.ofDays(4)), 100, tag);
+      Session session12 = criarSessao(Instant.now().minus(Period.ofDays(5)), 100, tag);
+      Session session13 = criarSessao(Instant.now().minus(Period.ofDays(6)), 15000, tag);
+
+      repository.save(session1);
+      repository.save(session2);
+      repository.save(session3);
+      repository.save(session4);
+      repository.save(session5);
+      repository.save(session6);
+      repository.save(session7);
+      repository.save(session8);
+      repository.save(session9);
+      repository.save(session10);
+      repository.save(session11);
+      repository.save(session12);
+      repository.save(session13);
+
+      int streak = service.getCurrentStreak();
+      
+      assertEquals(3, streak);
+    }
+
 }
