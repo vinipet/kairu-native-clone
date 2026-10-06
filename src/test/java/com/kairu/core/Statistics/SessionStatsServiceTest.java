@@ -28,9 +28,9 @@ class SessionStatsServiceTest {
 
     @BeforeEach
     void setup() {
-        Clock clock = new ManualClock(Instant.now());
+        Clock clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
         repository = new InMemorySessionRepository();
-        service = new SessionStatsService(repository, clock, ZoneId.systemDefault());
+        service = new SessionStatsService(repository, clock);
     }
 
     private Session criarSessao(Instant inicio, long duracaoSegundos, Tag tag) {

@@ -13,6 +13,7 @@ import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Field;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Scanner;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -26,7 +27,7 @@ class ApplicationTest {
 
     @BeforeEach
     void setup() throws Exception {
-        clock = new ManualClock(Instant.now());
+        clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
         context = Bootstrap.createInMemoryContext(clock);
         manager = context.getManager();
 

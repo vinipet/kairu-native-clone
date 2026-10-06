@@ -13,6 +13,7 @@ import com.kairu.core.time.*;
 import static org.junit.jupiter.api.Assertions.*;
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.UUID;
 
 public class SessionRuntimeTest{
@@ -27,7 +28,7 @@ public class SessionRuntimeTest{
   @BeforeEach
   void setup(){
     this.bus = new SimpleEventBus();
-    this.clock = new ManualClock(Instant.now());
+    this.clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
     this.id1 = UUID.randomUUID();
     this.tag = new Tag("test");
     this.factory = new TimerFactory(clock, bus);

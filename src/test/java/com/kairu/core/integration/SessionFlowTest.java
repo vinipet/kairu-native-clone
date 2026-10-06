@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -42,7 +43,7 @@ public class SessionFlowTest{
   @BeforeEach
   void setup() {
     this.bus = new SimpleEventBus();
-    this.clock = new ManualClock(Instant.now());
+    this.clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
     this.id1 = UUID.randomUUID();
     this.tag = new Tag("test");
     this.factory = new TimerFactory(clock, bus);

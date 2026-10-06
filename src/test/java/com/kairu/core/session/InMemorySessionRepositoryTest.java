@@ -8,6 +8,7 @@ import com.kairu.core.time.ManualClock;
 import static org.junit.jupiter.api.Assertions.*;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
@@ -17,7 +18,7 @@ public class  InMemorySessionRepositoryTest{
   @Test
   public void CanSaveSessionInList(){
     final List<Interval> intervals = new ArrayList<>();
-    ManualClock clock = new ManualClock(Instant.now());
+    ManualClock clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
     Instant inst1 = clock.now();
     clock.advanceSeconds(300);
     Instant inst2 = clock.now();
@@ -35,7 +36,7 @@ public class  InMemorySessionRepositoryTest{
   @Test
   public void CanSaveMultipleSessionInList(){
     final List<Interval> intervals = new ArrayList<>();
-    ManualClock clock = new ManualClock(Instant.now());
+    ManualClock clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
     Instant inst1 = clock.now();
     clock.advanceSeconds(300);
     Instant inst2 = clock.now();
@@ -57,7 +58,7 @@ public class  InMemorySessionRepositoryTest{
   @Test
   public void CanSearchById(){
     final List<Interval> intervals = new ArrayList<>();
-    ManualClock clock = new ManualClock(Instant.now());
+    ManualClock clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
     Instant inst1 = clock.now();
     clock.advanceSeconds(300);
     Instant inst2 = clock.now();

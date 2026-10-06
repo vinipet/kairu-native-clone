@@ -6,6 +6,9 @@ import com.kairu.core.time.Clock;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -14,11 +17,9 @@ public class SessionStatsService implements StatisticsService {
 
     private final SessionRepository sessionRepository;
     private final Clock clock;
-    private final ZoneId zoneId;
 
-    public SessionStatsService(SessionRepository sessionRepository, Clock clock, ZoneId zoneId) {
+    public SessionStatsService(SessionRepository sessionRepository, Clock clock) {
         this.sessionRepository = sessionRepository;
-        this.zoneId = zoneId;
         this.clock = clock;
     }
 
@@ -69,11 +70,9 @@ public class SessionStatsService implements StatisticsService {
 
       List<Session> allSessions = sessionRepository.findAll();
       Map<LocalDate, List<Session>> groupedByDate = groupSessionsByDate(allSessions);
-
-      java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.systemDefault());
       
       return java.util.stream.IntStream.range(0, daysCount)
-          .mapToObj(i -> today.minusDays(daysCount - 1 - i)) 
+          .mapToObj(i -> clock.today().minusDays(daysCount - 1 - i)) 
           .map(date -> {
             List<Session> dateSessions = groupedByDate.getOrDefault(date, List.of());
                 return calculateMetrics(date.toString(), dateSessions);
@@ -86,9 +85,8 @@ public class SessionStatsService implements StatisticsService {
       List<Session> allSessions = sessionRepository.findAll();
       Map<java.time.LocalDate, List<Session>> groupedByDate = groupSessionsByDate(allSessions);
 
-      java.time.LocalDate today = java.time.LocalDate.now(java.time.ZoneId.systemDefault());
       // Finds the Monday of the current week
-      java.time.LocalDate monday = today.with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
+      java.time.LocalDate monday = clock.today().with(java.time.temporal.TemporalAdjusters.previousOrSame(java.time.DayOfWeek.MONDAY));
 
       // Generates the 7 days of the current week (Monday to Sunday)
       return java.util.stream.IntStream.range(0, 7)
@@ -112,13 +110,26 @@ public class SessionStatsService implements StatisticsService {
     }
 
     private Map<LocalDate, List<Session>> groupSessionsByDate(List<Session> sessions) {
-        return sessions.stream()
-          .filter(s -> s.getStartedAt() != null)
-          .collect(Collectors.groupingBy(s -> {
-            return s.getStartedAt()
-            .atZone(ZoneId.systemDefault())
-            .toLocalDate();
-        }));
+      Map<LocalDate, List<Session>> groupedMap = new HashMap<>();
+
+      if (sessions == null || sessions.isEmpty()) {
+        return groupedMap;
+      }
+      
+      for (Session session : sessions) {
+        if (session != null && session.getStartedAt() != null) {
+            // Descobre a data da sessão
+            LocalDate date = session.getStartedAt()
+                                    .atZone(clock.getZoneId())
+                                    .toLocalDate();
+
+            // Se a data ainda não estiver no Map, cria uma lista nova. 
+            // Depois, adiciona a sessão na lista correspondente àquela data.
+            groupedMap.computeIfAbsent(date, k -> new ArrayList<>()).add(session);
+        }
+      }
+
+      return groupedMap;    
     }
 
     private MetricResult calculateMetrics(String groupKey, List<Session> sessions) {
@@ -140,15 +151,14 @@ public class SessionStatsService implements StatisticsService {
 
     List<Session> allSessions = sessionRepository.findAll();
     Map<LocalDate, List<Session>> days = groupSessionsByDate(allSessions);
-    LocalDate today = LocalDate.now(java.time.ZoneId.systemDefault());
     
-    if(days.get(today) != null){
-      if(dayCoutToStreak(today, days)){
+    if(days.get(clock.today()) != null){
+      if(dayCoutToStreak(clock.today(), days)){
         streak ++;
       }
     }
 
-    for (LocalDate cursor = today.minusDays(1) ; dayCoutToStreak(cursor, days) ; cursor = cursor.minusDays(1) ){
+    for (LocalDate cursor = clock.today().minusDays(1) ; dayCoutToStreak(cursor, days) ; cursor = cursor.minusDays(1) ){
       streak ++;
     }
 

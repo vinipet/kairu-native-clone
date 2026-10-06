@@ -2,7 +2,6 @@ package com.kairu.core.commands.builtin;
 
 import com.kairu.core.Bootstrap.ApplicationContext;
 import com.kairu.core.Bootstrap.Bootstrap;
-import com.kairu.core.commands.CommandResult;
 import com.kairu.core.session.Tag;
 import com.kairu.core.time.ManualClock;
 import org.junit.jupiter.api.BeforeEach;
@@ -10,6 +9,7 @@ import org.junit.jupiter.api.Test;
 
 import java.io.ByteArrayInputStream;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Scanner;
 
 import java.util.Set;
@@ -23,7 +23,7 @@ class BuiltinCommandsTest {
 
     @BeforeEach
     void setup() {
-        clock = new ManualClock(Instant.now());
+        clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
         context = Bootstrap.createInMemoryContext(clock);
         context.getTagRepository().save(new Tag("teste"));
         context.getTagRepository().save(new Tag("rust"));

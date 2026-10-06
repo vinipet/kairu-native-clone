@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
@@ -14,7 +15,7 @@ import com.kairu.core.time.sessionTimer;
 public class SimpleListenerTest {
   @Test
   void shouldReceiveOnlySubscribedEventType() {
-    ManualClock clock = new ManualClock(Instant.now());
+      ManualClock clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
     SimpleEventBus bus = new SimpleEventBus();
     UUID id = UUID.randomUUID();
     sessionTimer timer = new sessionTimer(clock, bus,id);

@@ -12,6 +12,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -27,7 +28,7 @@ public class SessionManagerTest {
     @BeforeEach
     void setup() {
         bus = new SimpleEventBus();
-        clock = new ManualClock(Instant.now());
+        clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
         factory = new TimerFactory(clock, bus);
         manager = new SessionManager(bus, clock, factory);
         tag = new Tag("test");

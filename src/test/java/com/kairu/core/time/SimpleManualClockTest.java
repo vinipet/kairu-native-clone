@@ -3,6 +3,7 @@ package com.kairu.core.time;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.time.Duration;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -11,7 +12,7 @@ class SimpleManualClockTest {
     
   @Test
   public void ClockCanSkipTime() {
-    ManualClock clock = new ManualClock(Instant.now()); 
+    ManualClock clock = new ManualClock(Instant.now(), ZoneId.systemDefault()); 
     
     Instant Start = clock.now();
     clock.advanceSeconds(10);
@@ -21,7 +22,7 @@ class SimpleManualClockTest {
 
   @Test
   public void ClockCanSkipTimeMultpliTimes() {
-    ManualClock clock = new ManualClock(Instant.now());
+    ManualClock clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
 
     Instant StartAt = clock.now();
     clock.advanceSeconds(5);
@@ -38,7 +39,7 @@ class SimpleManualClockTest {
 
   @Test
   public void ClockCantSkipWithNegativeNumbers(){
-    ManualClock clock = new ManualClock(Instant.now());
+    ManualClock clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
     
     assertThrows(IllegalArgumentException.class, () -> {
     clock.advanceSeconds(-5);
@@ -47,7 +48,7 @@ class SimpleManualClockTest {
 
   @Test
   public void SugestedName(){
-    ManualClock clock = new ManualClock(Instant.now());
+    ManualClock clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
 
     Instant t1 = clock.now();
     Instant t2 = clock.now();

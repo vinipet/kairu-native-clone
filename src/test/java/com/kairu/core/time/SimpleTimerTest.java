@@ -1,6 +1,7 @@
 package com.kairu.core.time;
 
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeEach;
@@ -22,7 +23,7 @@ public class SimpleTimerTest {
 
   @BeforeEach
   public void setup(){
-    this.clock = new ManualClock(Instant.now());
+    this.clock = new ManualClock(Instant.now(), ZoneId.systemDefault());
     this.bus = new SimpleEventBus();
     this.id = UUID.randomUUID();
     this.timer = new sessionTimer(clock, bus,id);

@@ -2,6 +2,7 @@ package com.kairu;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.ZoneId;
 import java.util.Scanner;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
@@ -41,7 +42,7 @@ public class Application {
     private static Instant messageExpiry = null;
 
     public static void main(String[] args) {
-        context = Bootstrap.createFileContext(new RealClock());
+        context = Bootstrap.createFileContext(new RealClock(ZoneId.systemDefault()));
         manager = context.getManager();
         dispatcher = CommandBootstrap.createDispatcher(context, scanner);
 
