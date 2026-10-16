@@ -10,6 +10,7 @@ import com.kairu.core.session.Tag;
 import com.kairu.core.time.Clock;
 import com.kairu.core.time.Interval;
 import com.kairu.core.time.ManualClock;
+import com.kairu.core.Statistics.StatisticsService.DaySummary;
 import com.kairu.core.Statistics.StatisticsService.MetricResult;
 
 import java.time.DayOfWeek;
@@ -152,6 +153,46 @@ class SessionStatsServiceTest {
         assertEquals(dataInexistente.toString(), result.groupKey());
         assertEquals(0, result.totalMinutes());
         assertEquals(0, result.sessionCount());
+    }
+
+    // ======== getDaySummary ========
+
+    @Test
+    void getDaySummary_DeveAgruparPorTag_ComTempoESessoes() {
+        LocalDate data = LocalDate.of(2025, 6, 15);
+        Instant inicio = data.atStartOfDay(ZoneId.systemDefault()).toInstant();
+        repository.save(criarSessao(inicio, 3600, new Tag("trabalho")));
+        repository.save(criarSessao(inicio.plusSeconds(3600), 1800, new Tag("estudo")));
+        repository.save(criarSessao(inicio.plusSeconds(7200), 5400, new Tag("trabalho")));
+
+        StatisticsService.DaySummary result = service.getDaySummary(data);
+
+        assertEquals(data, result.date());
+        assertEquals(2, result.byTag().size());
+
+        var estudo = result.byTag().stream().filter(t -> t.tag().equals("estudo")).findFirst().orElseThrow();
+        assertEquals(30, estudo.totalMinutes());
+        assertEquals(1, estudo.sessionCount());
+
+        var trabalho = result.byTag().stream().filter(t -> t.tag().equals("trabalho")).findFirst().orElseThrow();
+        assertEquals(150, trabalho.totalMinutes());
+        assertEquals(2, trabalho.sessionCount());
+
+        assertEquals(180, result.totalMinutes());
+        assertEquals(3, result.totalSessions());
+    }
+
+    @Test
+    void getDaySummary_DeveRetornarVazio_QuandoNaoTiverSessaoNaData() {
+        repository.save(criarSessao(Instant.now(), 1800, new Tag("teste")));
+
+        LocalDate dataInexistente = LocalDate.of(2020, 1, 1);
+        StatisticsService.DaySummary result = service.getDaySummary(dataInexistente);
+
+        assertEquals(dataInexistente, result.date());
+        assertTrue(result.byTag().isEmpty());
+        assertEquals(0, result.totalMinutes());
+        assertEquals(0, result.totalSessions());
     }
 
     // ======== getRecentDaysStats ========

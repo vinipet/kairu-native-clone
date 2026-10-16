@@ -69,8 +69,8 @@ public class AnalyticsCommand extends BuiltinCommand {
                 String dateInput = scanner.nextLine().trim();
                 try {
                     LocalDate date = LocalDate.parse(dateInput);
-                    var stat = context.getAnalytics().getStatsForDate(date);
-                    return CommandResult.success(formatSingleMetric(stat));
+                    var summary = context.getAnalytics().getDaySummary(date);
+                    return CommandResult.success(formatDaySummary(summary));
                 } catch (java.time.format.DateTimeParseException e) {
                     return CommandResult.failure(new IllegalArgumentException("Invalid date format! Use YYYY-MM-DD"));
                 }
@@ -122,6 +122,25 @@ public class AnalyticsCommand extends BuiltinCommand {
         sb.append(String.format("\033[1mTarget: \033[0m%s%n", stat.groupKey()));
         sb.append(String.format("\033[1mTotal Time: \033[0m%d min%n", stat.totalMinutes()));
         sb.append(String.format("\033[1mSessions: \033[0m%d%n%n", stat.sessionCount()));
+        return sb.toString();
+    }
+
+    private String formatDaySummary(StatisticsService.DaySummary summary) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n\033[1m\033[32m--- Day Summary: ").append(summary.date()).append(" ---\033[0m\n");
+        if (summary.byTag().isEmpty()) {
+            sb.append("No sessions on this date.\n");
+            return sb.toString();
+        }
+        sb.append(String.format("\033[1m%-20s | %-12s | %-10s\033[0m%n", "Tag", "Total Time", "Sessions"));
+        sb.append("-----------------------------------------------------\n");
+        for (var tagStat : summary.byTag()) {
+            sb.append(String.format("%-20s | %-10d min | %-10d%n",
+                    tagStat.tag(), tagStat.totalMinutes(), tagStat.sessionCount()));
+        }
+        sb.append("-----------------------------------------------------\n");
+        sb.append(String.format("\033[1m%-20s | %-10d min | %-10d\033[0m%n%n",
+                "TOTAL", summary.totalMinutes(), summary.totalSessions()));
         return sb.toString();
     }
 }

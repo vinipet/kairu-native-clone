@@ -2,6 +2,7 @@ package com.kairu;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Scanner;
 import java.util.concurrent.Executors;
@@ -216,7 +217,24 @@ public class Application {
     }
 
     private static void showBanner() {
-        System.out.println(BOLD + BLUE + "=== KAIRU PRODUCTIVITY TIMER ===" + RESET);
+        System.out.println(BOLD + GREEN + "=== KAIRU PRODUCTIVITY TIMER ===" + RESET);
+
+        if ("dev".equalsIgnoreCase(PersistencePaths.env)) {
+            System.out.println(BOLD + BLUE + "KAIRU DEV VERSION" + RESET);
+        }
+
+        var analytics = context.getAnalytics();
+        int streak = analytics.getCurrentStreak();
+        System.out.println(YELLOW + BOLD + "󰈸 Streak: " + streak + " dia(s) 󰈸" + RESET);
+
+        LocalDate yesterday = LocalDate.now(ZoneId.systemDefault()).minusDays(1);
+        var summary = analytics.getDaySummary(yesterday);
+        if (summary.totalSessions() == 0) {
+            System.out.println(RED + "Ontem (" + summary.date() + ") voce nao focou nada. Vergonha.󰱶" + RESET);
+        } else {
+            System.out.println(CYAN + "Resumo de ontem (" + summary.date() + "): "
+                    + summary.totalMinutes() + " min | " + summary.totalSessions() + " sessões" + RESET);
+        }
     }
 
     private static String getPromptTagSuffix() {

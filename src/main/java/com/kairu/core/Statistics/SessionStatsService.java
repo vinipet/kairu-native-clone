@@ -5,9 +5,8 @@ import com.kairu.core.session.SessionRepository;
 import com.kairu.core.time.Clock;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.ArrayList;
-import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +59,35 @@ public class SessionStatsService implements StatisticsService {
       List<Session> dateSessions = groupedByDate.getOrDefault(date, List.of());
 
       return calculateMetrics(date.toString(), dateSessions);
+    }
+
+    @Override
+    public DaySummary getDaySummary(LocalDate date) {
+        if (date == null) {
+            throw new IllegalStateException("date can't be null");
+        }
+
+        List<Session> allSessions = sessionRepository.findAll();
+        Map<LocalDate, List<Session>> groupedByDate = groupSessionsByDate(allSessions);
+        List<Session> dateSessions = groupedByDate.getOrDefault(date, List.of());
+
+        Map<String, List<Session>> byTag = dateSessions.stream()
+                .collect(Collectors.groupingBy(s -> s.getTag().getName()));
+
+        List<TagStat> tagStats = byTag.entrySet().stream()
+                .map(entry -> {
+                    long minutes = entry.getValue().stream()
+                            .mapToLong(s -> s.getTotalDuration().toMinutes())
+                            .sum();
+                    return new TagStat(entry.getKey(), minutes, entry.getValue().size());
+                })
+                .sorted(Comparator.comparing(TagStat::tag))
+                .toList();
+
+        long totalMinutes = tagStats.stream().mapToLong(TagStat::totalMinutes).sum();
+        long totalSessions = tagStats.stream().mapToLong(TagStat::sessionCount).sum();
+
+        return new DaySummary(date, tagStats, totalMinutes, totalSessions);
     }
 
     @Override
@@ -182,4 +210,6 @@ public class SessionStatsService implements StatisticsService {
 
     return false;
   }
+  
+
 }
